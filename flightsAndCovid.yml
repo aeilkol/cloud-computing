@@ -3,8 +3,8 @@ info:
   title: "COVID Flights API"
   description: "Get the data related to flights during the last Covid pandemia"
   version: "1.0"
-  
-  
+
+
 servers:
 - url: "Not Implemented"
 
@@ -24,14 +24,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/200'
-      
+
 
   /allFlights:
     get:
       tags:
       - Airports And Flights
       summary: "Get all flights from a certain day"
-      description: "Access all flights from an airport in a specific day"
+      description: "Access all flights from a specific day"
       operationId: AllFlightsData
       parameters:
         - $ref: '#/components/parameters/date'
@@ -50,15 +50,15 @@ paths:
               schema:
                 title: Not found
                 type: string
-                example: Not found  
+                example: Not found
 
   /flightsStatistics:
     get:
       tags:
       - Airports And Flights
-      summary: "Get all flights from a certain day"
+      summary: "Get all flights from an airport in a certain day"
       description: "Access all flights from an airport in a specific day"
-      operationId: AllFlightsData
+      operationId: AllFlightsAirportData
       parameters:
         - $ref: '#/components/parameters/date'
         - $ref: '#/components/parameters/airport'
@@ -77,7 +77,7 @@ paths:
               schema:
                 title: Not found
                 type: string
-                example: Not found  
+                example: Not found
 
   /covidCases:
     get:
@@ -150,7 +150,7 @@ components:
       description: "Format DD/MM/YYYY"
       schema:
         type: string
-    
+
     airport:
       name: airport
       in: query
@@ -162,11 +162,11 @@ components:
     "200":
       title: Successful response
       type: object
-    
+
       properties:
         coord:
           $ref: '#/components/schemas/Coord'
-        
+
         airport:
           type: object
           items:
@@ -177,11 +177,11 @@ components:
           type: object
           items:
             $ref: '#/components/schemas/Flight'
-          description: A flight        
-        
-        
-       
-    
+          description: A flight
+
+
+
+
     Airport:
       titile: Airport
       type: object
@@ -211,6 +211,3 @@ components:
           description: Source airport id
           format: int32
           example: 803
-
-
- 
