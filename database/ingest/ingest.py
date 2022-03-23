@@ -10,6 +10,17 @@ import json
 import time
 
 
+def check_if_db_contains_data(cursor):
+    pass
+
+
+def check_airport_table(cursor):
+    sql = 'SELECT COUNT(*) AS count FROM airports'
+
+    cursor.execute(sql, [])
+    count = cursor.fetchone()
+
+
 def download_datasets():
 
     path = 'datasets'
@@ -105,6 +116,7 @@ def create_tables(cursor):
         name VARCHAR(128),
         type VARCHAR(32),
         elevation REAL,
+        continent VARCHAR(2),
         location GEOGRAPHY(POINT)
     );             
     DROP TABLE IF EXISTS flights CASCADE;
@@ -112,9 +124,9 @@ def create_tables(cursor):
         id SERIAL PRIMARY KEY,
         aircraft_uid VARCHAR(36),
         callsign VARCHAR(8),
-        typecode VARCHAR(4),
-        origin VARCHAR(4) REFERENCES airports(code),
-        destination VARCHAR(4) REFERENCES airports(code),
+        typecode VARCHAR(25),
+        origin VARCHAR(25) REFERENCES airports(code),
+        destination VARCHAR(25) REFERENCES airports(code),
         firstseen TIMESTAMP,
         lastseen TIMESTAMP
     );
@@ -141,23 +153,23 @@ def create_tables(cursor):
 
 
 def ingest(cursor, destinations):
-    #ingest_airports(cursor, destinations['airports'])
-    #ingest_regions(cursor, destinations['regions'])
-    #ingest_covid(cursor, destinations['covid'])
+    ingest_airports(cursor, destinations['airports'])
+    ingest_regions(cursor, destinations['regions'])
+    ingest_covid(cursor, destinations['covid'])
     ingest_flights(cursor, destinations['flights'])
 
 
 def ingest_airports(cursor, path):
 
     sql = '''
-    INSERT INTO airports (code, name, type, elevation, location) VALUES
-    (%s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326));
+    INSERT INTO airports (code, name, type, elevation, continent, location) VALUES
+    (%s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326));
     '''
 
     with open(path, 'r') as csvfile:
         csvreader = csv.DictReader(csvfile)
         for line in csvreader:
-            insert = [line['ident'], line['name'], line['type'], None,line['longitude_deg'], line['latitude_deg']]
+            insert = [line['ident'], line['name'], line['type'], None, line['continent'], line['longitude_deg'], line['latitude_deg']]
             insert[2] = line['elevation_ft'] if line['elevation_ft'] else None
             cursor.execute(sql, insert)
 
