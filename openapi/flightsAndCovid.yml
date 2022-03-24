@@ -1,0 +1,271 @@
+openapi: "3.0.2"
+info:
+  title: "COVID Flights API"
+  description: "Get data related to flights during the Covid pandemic"
+  version: "1.0"
+
+
+servers:
+- url: "Not Implemented"
+
+paths:
+  /airports:
+    get:
+      operationId: airports.read_all
+      tags:
+      - Airports
+      summary: Get all airports
+      description: Get all airports in the database, optinally filtered by continent and type
+      parameters:
+        - $ref: '#/components/parameters/continent'
+          description: Continent to filter the search by
+        - $ref: '#/components/schemas/airport_type'
+          description: Airport type to filter the search by
+      responses:
+        "200":
+          description: Successfully read requested airports
+          $ref: '#/components/responses/airports'
+
+
+  /flights:
+    get:
+      operationId: flights.read_all
+      tags:
+      - Flights
+      summary: Get all flights from a certain date
+      description: Get all flights from a specific date, optionally filtered by continent
+      parameters:
+        - $ref: '#/components/parameters/date'
+          description: Date at which to get all flights
+        - $ref: '#/components/parameters/continent'
+          description: Continent to filter the search by
+
+      responses:
+        "200":
+          description: Successfully read requested flights
+          $ref: '#/components/responses/airports'
+
+        "404":
+          $ref: '#/components/responses/not_found'
+
+
+  /covid_cases:
+    get:
+      tags:
+        - Covid Cases
+      summary: Get the number of covid cases in european regions on a certain date
+      description: Get the number of covid cases in european regions on a certain date, optionally set grain of region
+      operationId: covid_cases.read_all
+      parameters:
+        - $ref: '#/components/parameters/date'
+          description: Date at which to get all covid cases
+        - $ref: '#/components/parameters/area_level'
+          description: Grain of regions at which to get all cases
+      responses:
+        "200":
+          description: Successfully read all covid cases in europe for a date
+          $ref: '#/components/responses/covid_cases'
+        "404":
+          $ref: '#/components/responses/not_found'
+
+  #/airport_statistics:
+  #  get:
+  #    tags:
+  #    - Airports And Flights
+  #    summary: Get some statistics on covid and flights on a certain date
+  #    description: Get some statistics on covid and flights on a certain date
+  #    operationId: flights.read_statistics
+  #    parameters:
+  #      - name: data
+  #        in: query
+  #      - $ref: '#/components/schemas/airport'
+  #    responses:
+  #      "200":
+  #        description: Successful response
+  #        content:
+  #          application/json:
+  #            schema:
+  #              $ref: '#/components/schemas/200'
+  #      "404":
+  #        $ref: '#/components/response/not_found'
+
+  /airport_covid_cases:
+    get:
+      tags:
+      - Covid Cases
+      summary: Get the number of covid cases in a certain airport's area
+      description: Get the number of covid cases over time in an certain airports area on a specific area level
+      operationId: covidCasesEurope
+      parameters:
+        - $ref: '#/components/parameters/airport_code'
+        - $ref: '#/components/parameters/area_level'
+          description: Grain of regions at which to get cases
+      responses:
+        "200":
+          $ref: '#/components/responses/covid_cases'
+        "404":
+          $ref: '#/components/responses/not_found'
+
+
+security:
+- app_id: []
+
+tags:
+  - name: Airports And Flights
+    description: "Get data from all the airports"
+  - name: Covid Cases
+    description: "Get data from covid cases in europe in a specific day"
+
+components:
+
+  schemas:
+
+    airport_code:
+      type: string
+      minLength: 3
+      maxLength: 5
+
+    coordinate:
+      type: array
+      description: 2-D Location on earth in [latitude, longitude] format
+      minItems: 2
+      maxItems: 2
+      items:
+        type: number
+        format: float
+
+    airport_type:
+      type: string
+      enum: [closed, heliport, small_airport, medium_airport, large_airport]
+
+    airport:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/airport_code'
+        name:
+          type: string
+          description: Airport name
+        location:
+          $ref: '#/components/schemas/coordinate'
+          description: Location of the airport
+        type:
+          $ref: '#/components/schemas/airport_type'
+          description: Type of airport
+
+    flight:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Flight id
+          format: int32
+          example: 803
+        src:
+          $ref: '#/components/schemas/airport_code'
+          description: Source airport id
+        dest:
+          $ref: '#/components/schemas/airport_code'
+          description: Destination airport id
+        firstseen:
+          type: string
+          format: date-time
+          description: Roughly the starting time of the flight
+        lastseen:
+          type: string
+          format: date-time
+          description: Roughly the landing time of the flight
+
+    covid_cases:
+      type: object
+      properties:
+        region:
+          type: string
+          minLength: 2
+          maxLength: 5
+        incidence:
+          type: number
+          format: float
+        date:
+          type: string
+          format: date
+
+
+  parameters:
+
+    continent:
+      name: continent
+      in: query
+      required: false
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 2
+
+    airport_type:
+      name: airport_type
+      in: query
+      description: Size of an airport and whether it is closed
+      required: false
+      schema:
+        $ref: '#/components/schemas/airport_type'
+
+    date:
+      name: date
+      in: query
+      schema:
+        type: string
+        format: date
+
+    area_level:
+      name: area_level
+      in: query
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        maximum: 3
+
+    airport_code:
+      name: airport_code
+      description: Airport id code
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/airport_code'
+
+  responses:
+
+    airports:
+      description: A list of airports
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/airport'
+
+    flights:
+      description: A list of flights
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/flight'
+
+    covid_cases:
+      description: A list of covid cases by region
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/covid_cases'
+
+    not_found:
+      description: Not found response
+      content:
+        application/json:
+          schema:
+            type: string
