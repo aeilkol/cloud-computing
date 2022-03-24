@@ -154,9 +154,13 @@ def create_tables(cursor):
 
 def ingest(cursor, destinations):
     ingest_airports(cursor, destinations['airports'])
+    print('Ingested airports')
     ingest_regions(cursor, destinations['regions'])
+    print('Ingested regions')
     ingest_covid(cursor, destinations['covid'])
+    print('Ingested covid cases')
     ingest_flights(cursor, destinations['flights'])
+    print('Ingested flights')
 
 
 def ingest_airports(cursor, path):
@@ -170,7 +174,7 @@ def ingest_airports(cursor, path):
         csvreader = csv.DictReader(csvfile)
         for line in csvreader:
             insert = [line['ident'], line['name'], line['type'], None, line['continent'], line['longitude_deg'], line['latitude_deg']]
-            insert[2] = line['elevation_ft'] if line['elevation_ft'] else None
+            insert[3] = line['elevation_ft'] if line['elevation_ft'] else None
             cursor.execute(sql, insert)
 
 
@@ -218,6 +222,8 @@ def ingest_flights(cursor, path):
         SELECT count(*) AS c FROM airports WHERE code=%s;
     '''
     filenames = os.listdir(path)
+    max_flights = 100000
+    flights = 0
     for filename in filenames:
         with open(os.path.join(path, filename), 'r') as csvfile:
             csvreader = csv.DictReader(csvfile)
@@ -231,6 +237,9 @@ def ingest_flights(cursor, path):
                     destination_exists = cursor.fetchone()[0]
                     if origin_exists and destination_exists:
                         cursor.execute(sql, insert)
+                flights += 1
+                if flights >= max_flights:
+                    return
 
 
 if __name__ == '__main__':

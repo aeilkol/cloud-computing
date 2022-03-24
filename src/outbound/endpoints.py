@@ -1,6 +1,17 @@
+import grpc
 
-def read_all_airports():
-    pass
+from data_delivery_pb2 import Airport, AirportRequest
+from data_delivery_pb2_grpc import DataDeliveryStub
+
+data_delivery_channel = grpc.insecure_channel('localhost:50051')
+data_delivery_client = DataDeliveryStub(data_delivery_channel)
+
+def read_all_airports(continent, airport_type):
+    request = AirportRequest(
+        continent=continent
+    )
+    response = data_delivery_client.Airports(request)
+    return response
 
 def read_all_flights():
     pass

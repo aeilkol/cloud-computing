@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+message AirportRequest {
+  string continent = 1;
+}
+
+message Location {
+  float latitude = 1;
+  float longitude = 2;
+}
+
+message Airport {
+  string name = 1;
+  string code = 2;
+  Location location = 3;
+  string type = 4;
+}
+
+message AirportResponse {
+  repeated Airport airports = 1;
+}
+
+service DataDelivery {
+  rpc Airports (AirportRequest) returns (AirportResponse);
+}
