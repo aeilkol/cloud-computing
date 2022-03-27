@@ -20,6 +20,23 @@ message AirportResponse {
   repeated Airport airports = 1;
 }
 
+message FlightRequest {
+  string date = 1;
+  string continent = 2;
+}
+
+message Flight {
+  integer id = 1;
+  string src = 2;
+  string dest = 3;
+  string firstseen = 4;
+  string lastseen = 5;
+}
+
+message FlightResponse {
+  repeated Flight flights = 1;
+}
+
 service DataDelivery {
   rpc Airports (AirportRequest) returns (AirportResponse);
 }

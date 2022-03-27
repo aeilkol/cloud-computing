@@ -9,7 +9,9 @@ from grpc_interceptor import ExceptionToStatusInterceptor
 
 from data_delivery_pb2 import (
     Airport,
-    AirportResponse
+    Flight,
+    AirportResponse,
+    FlightResponse
 )
 import data_delivery_pb2_grpc
 
@@ -31,6 +33,21 @@ class DataDeliveryService(data_delivery_pb2_grpc.DataDeliveryServicer):
             )
         return AirportResponse(airports=airport_objects)
 
+    def Flights(self, request, context):
+        flights = self.database_service.getFlights(request.date, request.continent)
+        flights_objects = []
+        for flight in flights:
+            flights_objects.append(
+                Flight(
+                    id=flight['id'],
+                    src=flight['src'],
+                    dest=flight['dest'],
+                    firstseen=flight['flightseen'],
+                    lastseen=flight['lastseen']
+                )
+            )
+        return FlightResponse(flights=flights_objects)
+
 
 class DataDeliveryDatabaseService():
 
@@ -42,6 +59,17 @@ class DataDeliveryDatabaseService():
         params = []
         if continent:
             sql += ' WHERE continent=%s'
+            params.append(continent)
+        cursor = self.connection.cursor()
+        cursor.query(sql, params)
+        return cursor.fetchall()
+    
+    def getFlights(self, date, continent=None):
+        #idk what if it is %s or %d
+        sql = 'SELECT * FROM flights WHERE date=%s'
+        params = [date]
+        if continent:
+            sql += ' AND continent=%s'
             params.append(continent)
         cursor = self.connection.cursor()
         cursor.query(sql, params)
