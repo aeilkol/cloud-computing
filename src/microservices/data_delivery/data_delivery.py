@@ -9,7 +9,10 @@ from grpc_interceptor import ExceptionToStatusInterceptor
 
 from data_delivery_pb2 import (
     Airport,
-    AirportResponse
+    AirportResponse,
+    CovidCasesResponse,
+    CovidCase
+    
 )
 import data_delivery_pb2_grpc
 
@@ -30,6 +33,20 @@ class DataDeliveryService(data_delivery_pb2_grpc.DataDeliveryServicer):
                 )
             )
         return AirportResponse(airports=airport_objects)
+            
+    def CovidCases(self, request, context):
+        covidCases = self.database_service.getCovidCases(request.date, request.area_level)
+        covidCases_objects = []
+        for CovidCase in covidCases:
+            covidCases_objects.append(
+                CovidCase(
+                    contry = CovidCase['contry'],
+                    week = CovidCase['week'],
+                    covidCases = CovidCase['covidCases']
+                )
+            )
+        return CovidCasesResponse(covidCases=covidCases_objects)
+       
 
 
 class DataDeliveryDatabaseService():
@@ -47,6 +64,16 @@ class DataDeliveryDatabaseService():
         cursor.query(sql, params)
         return cursor.fetchall()
 
+    def getCovidCases(self, date, area_level=None):
+        sql = 'SELECT * FROM covid_cases WHERE year_week=%s'
+        params =[]
+        params.append(getDateInWeekFormat(date))
+        cursor = self.connection.cursor()
+        cursor.query(sql, params)
+        return cursor.fetchall()
+    
+    def getDateInWeekFormat(self, date):
+        return date
 
 def serve():
 

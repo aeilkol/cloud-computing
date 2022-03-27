@@ -1,6 +1,6 @@
 import grpc
 
-from data_delivery_pb2 import Airport, AirportRequest
+from data_delivery_pb2 import Airport, AirportRequest, CovidCasesRequest
 from data_delivery_pb2_grpc import DataDeliveryStub
 
 data_delivery_channel = grpc.insecure_channel('localhost:50051')
@@ -16,8 +16,13 @@ def read_all_airports(continent, airport_type):
 def read_all_flights():
     pass
 
-def read_all_covid_cases():
-    pass
+def read_all_covid_cases(date, area_level):
+    request = CovidCasesRequest(
+        date=date,
+        area_level=area_level
+    )
+    response = data_delivery_client.CovidCases(request)
+    return response
 
 def read_airport_covid_cases():
     pass
