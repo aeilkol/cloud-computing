@@ -5,6 +5,9 @@ from concurrent import futures
 import dotenv
 import psycopg2
 import grpc
+import moment
+from datetime import datetime
+
 from grpc_interceptor import ExceptionToStatusInterceptor
 
 from data_delivery_pb2 import (
@@ -67,13 +70,11 @@ class DataDeliveryDatabaseService():
     def getCovidCases(self, date, area_level=None):
         sql = 'SELECT * FROM covid_cases WHERE year_week=%s'
         params =[]
-        params.append(getDateInWeekFormat(date))
+        params.append(moment(date).endOf('week').format('YYYY-WW'))
         cursor = self.connection.cursor()
         cursor.query(sql, params)
         return cursor.fetchall()
-    
-    def getDateInWeekFormat(self, date):
-        return date
+
 
 def serve():
 
