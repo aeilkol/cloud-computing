@@ -1,7 +1,17 @@
 syntax = "proto3";
 
+
+enum AirportType {
+  large_airport = 0;
+  medium_airport = 1;
+  small_aiprort= 2;
+  heliport = 3;
+  closed = 4;
+}
+
 message AirportRequest {
   string continent = 1;
+  AirportType airport_type = 2;
 }
 
 message Location {
@@ -13,7 +23,7 @@ message Airport {
   string name = 1;
   string code = 2;
   Location location = 3;
-  string type = 4;
+  AirportType type = 4;
 }
 
 message AirportResponse {
