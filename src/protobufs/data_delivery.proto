@@ -37,6 +37,21 @@ message FlightResponse {
   repeated Flight flights = 1;
 }
 
+message AirportCovidCasesRequest {
+  string airport_code = 1;
+  integer area_level = 2;
+}
+
+message AirportCovidCase {
+  string region = 1;
+  number incidence = 2;
+  string date = 3;
+}
+
+message AirportCovidCaseResponse {
+  repeated AirportCovidCase covid_cases = 1;
+}
+
 service DataDelivery {
   rpc Airports (AirportRequest) returns (AirportResponse);
 }

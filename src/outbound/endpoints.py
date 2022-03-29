@@ -1,7 +1,7 @@
 from datetime import date
 import grpc
 
-from data_delivery_pb2 import Airport, AirportRequest, FlightRequest
+from data_delivery_pb2 import Airport, AirportRequest, FlightRequest, AirportCovidCaseRequest
 from data_delivery_pb2_grpc import DataDeliveryStub
 
 data_delivery_channel = grpc.insecure_channel('localhost:50051')
@@ -25,5 +25,10 @@ def read_all_flights(date, continent):
 def read_all_covid_cases():
     pass
 
-def read_airport_covid_cases():
-    pass
+def read_airport_covid_cases(airport_code, area_level):
+    request = AirportCovidCaseRequest(
+        airport_code=airport_code,
+        area_level=area_level
+    )
+    response = data_delivery_client.AirportCovidCases(request)
+    return response

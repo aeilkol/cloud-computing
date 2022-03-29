@@ -11,7 +11,9 @@ from data_delivery_pb2 import (
     Airport,
     Flight,
     AirportResponse,
-    FlightResponse
+    FlightResponse,
+    AirportCovidCase,
+    AirportCovidCaseResponse
 )
 import data_delivery_pb2_grpc
 
@@ -48,6 +50,18 @@ class DataDeliveryService(data_delivery_pb2_grpc.DataDeliveryServicer):
             )
         return FlightResponse(flights=flights_objects)
 
+    def AirportCovidCases(self, request, context):
+        airportCovidCases = self.database_service.getAirportCovidCases(request.airport_code, request.area_level)
+        cases_objects = []
+        for case in airportCovidCases:
+            cases_objects.append(
+                AirportCovidCase(
+                    region=case['region'],
+                    incidence=case['incidence'],
+                    date=case['date']
+                )
+            )
+        return AirportCovidCaseResponse(covid_cases=cases_objects)
 
 class DataDeliveryDatabaseService():
 
@@ -71,6 +85,13 @@ class DataDeliveryDatabaseService():
         if continent:
             sql += ' AND continent=%s'
             params.append(continent)
+        cursor = self.connection.cursor()
+        cursor.query(sql, params)
+        return cursor.fetchall()
+
+    def getAirportCovidCases(self, airport_code, area_level):
+        sql = 'SELECT * FROM covid_cases WHERE airport_code=%s AND area_level=%s'
+        params = [airport_code, area_level]
         cursor = self.connection.cursor()
         cursor.query(sql, params)
         return cursor.fetchall()
