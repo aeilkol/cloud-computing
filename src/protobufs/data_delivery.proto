@@ -37,6 +37,21 @@ message FlightResponse {
   repeated Flight flights = 1;
 }
 
+message CovidCasesRequest {
+  string date = 1;
+  string area_level = 2;
+}
+
+message CovidCase{
+  string contry = 1;
+  string week = 2
+  int covidCases = 3;
+}
+
+message CovidCasesResponse {
+  repeated CovidCase covidCases = 1;
+}
+
 message AirportCovidCasesRequest {
   string airport_code = 1;
   integer area_level = 2;

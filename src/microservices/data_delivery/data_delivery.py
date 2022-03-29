@@ -5,6 +5,9 @@ from concurrent import futures
 import dotenv
 import psycopg2
 import grpc
+import moment
+from datetime import datetime
+
 from grpc_interceptor import ExceptionToStatusInterceptor
 
 from data_delivery_pb2 import (
@@ -12,6 +15,8 @@ from data_delivery_pb2 import (
     Flight,
     AirportResponse,
     FlightResponse,
+    CovidCase,
+    CovidCasesResponse,
     AirportCovidCase,
     AirportCovidCaseResponse
 )
@@ -34,6 +39,20 @@ class DataDeliveryService(data_delivery_pb2_grpc.DataDeliveryServicer):
                 )
             )
         return AirportResponse(airports=airport_objects)
+            
+    def CovidCases(self, request, context):
+        covidCases = self.database_service.getCovidCases(request.date, request.area_level)
+        covidCases_objects = []
+        for covidCase in covidCases:
+            covidCases_objects.append(
+                CovidCase(
+                    contry = covidCase['contry'],
+                    week = covidCase['week'],
+                    covidCases = covidCase['covidCases']
+                )
+            )
+        return CovidCasesResponse(covidCases=covidCases_objects)
+       
 
     def Flights(self, request, context):
         flights = self.database_service.getFlights(request.date, request.continent)
@@ -92,6 +111,14 @@ class DataDeliveryDatabaseService():
     def getAirportCovidCases(self, airport_code, area_level):
         sql = 'SELECT * FROM covid_cases WHERE airport_code=%s AND area_level=%s'
         params = [airport_code, area_level]
+        cursor = self.connection.cursor()
+        cursor.query(sql, params)
+        return cursor.fetchall()
+
+    def getCovidCases(self, date, area_level=None):
+        sql = 'SELECT * FROM covid_cases WHERE year_week=%s'
+        params =[]
+        params.append(moment(date).endOf('week').format('YYYY-WW'))
         cursor = self.connection.cursor()
         cursor.query(sql, params)
         return cursor.fetchall()
