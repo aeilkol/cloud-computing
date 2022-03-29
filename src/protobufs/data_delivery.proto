@@ -1,7 +1,18 @@
 syntax = "proto3";
 
+// Airport RPC
+
+enum AirportType {
+  large_airport = 0;
+  medium_airport = 1;
+  small_aiprort= 2;
+  heliport = 3;
+  closed = 4;
+}
+
 message AirportRequest {
   string continent = 1;
+  AirportType airport_type = 2;
 }
 
 message Location {
@@ -13,7 +24,7 @@ message Airport {
   string name = 1;
   string code = 2;
   Location location = 3;
-  string type = 4;
+  AirportType type = 4;
 }
 
 message AirportResponse {
@@ -26,7 +37,7 @@ message FlightRequest {
 }
 
 message Flight {
-  integer id = 1;
+  int32 id = 1;
   string src = 2;
   string dest = 3;
   string firstseen = 4;
@@ -37,6 +48,11 @@ message FlightResponse {
   repeated Flight flights = 1;
 }
 
+// Airport covid cases RPC
+
+
+
 service DataDelivery {
   rpc Airports (AirportRequest) returns (AirportResponse);
+  rpc Flights (FlightRequest) returns (FlightResponse);
 }

@@ -61,18 +61,25 @@ class DataDeliveryDatabaseService():
             sql += ' WHERE continent=%s'
             params.append(continent)
         cursor = self.connection.cursor()
-        cursor.query(sql, params)
+        cursor.execute(sql, params)
         return cursor.fetchall()
     
     def getFlights(self, date, continent=None):
-        #idk what if it is %s or %d
-        sql = 'SELECT * FROM flights WHERE date=%s'
-        params = [date]
-        if continent:
-            sql += ' AND continent=%s'
-            params.append(continent)
+        sql = '''
+        SELECT f.* FROM flights AS f
+        JOIN airports AS a_o
+          ON a_o.code = f.origin
+        JOIN airports AS a_d
+          ON a_d.code = f.destination
+        WHERE (firstseen::date=TO_DATE(%(date)s, 'YYYY-MM-DD') OR lastseen::date=TO_DATE(%(date)s, 'YYYY-MM-DD'))
+          AND (a_o.continent=%(continent)s OR a_d.continent=%(continent)s OR %(continent)s IS NULL)
+        '''
+        params = {
+            'date': date,
+            'continent': continent
+        }
         cursor = self.connection.cursor()
-        cursor.query(sql, params)
+        cursor.execute(sql, params)
         return cursor.fetchall()
 
 
