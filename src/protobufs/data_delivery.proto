@@ -45,7 +45,7 @@ message CovidCasesRequest {
 message CovidCase{
   string contry = 1;
   string week = 2
-  int covidCases = 3;
+  integer covidCases = 3;
 }
 
 message CovidCasesResponse {
