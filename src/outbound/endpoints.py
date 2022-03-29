@@ -2,7 +2,7 @@ from datetime import date
 import grpc
 from google.protobuf.json_format import MessageToJson
 
-from data_delivery_pb2 import Airport, AirportRequest, FlightRequest, CovidCasesRequest, AirportCovidCaseRequest
+from data_delivery_pb2 import Airport, AirportRequest, FlightRequest, CovidCasesRequest, AirportCovidCasesRequest
 from data_delivery_pb2_grpc import DataDeliveryStub
 
 data_delivery_channel = grpc.insecure_channel('localhost:50051', options=(('grpc.enable_http_proxy', 0),))
