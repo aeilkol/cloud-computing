@@ -1,8 +1,6 @@
-from datetime import date
 import grpc
-from google.protobuf.json_format import MessageToJson
 
-from data_delivery_pb2 import Airport, AirportRequest, FlightRequest
+from data_delivery_pb2 import AirportRequest, CovidCaseRequest, FlightRequest
 from data_delivery_pb2_grpc import DataDeliveryStub
 from google.protobuf.json_format import MessageToDict
 
@@ -28,8 +26,13 @@ def read_all_flights(date, continent):
     return MessageToDict(response)
 
 
-def read_all_covid_cases():
-    pass
+def read_all_covid_cases(date, area_level):
+    request = CovidCaseRequest(
+        date=date,
+        area_level=area_level
+    )
+    response = data_delivery_client.CovidCases(request)
+    return MessageToDict(response)
 
 
 def read_airport_covid_cases():

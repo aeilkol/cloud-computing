@@ -1,7 +1,6 @@
 syntax = "proto3";
 
-
-// Airport RPC
+// Airport messages
 
 enum AirportType {
   large_airport = 0;
@@ -32,6 +31,8 @@ message AirportResponse {
   repeated Airport airports = 1;
 }
 
+// Flight messages
+
 message FlightRequest {
   string date = 1;
   string continent = 2;
@@ -53,7 +54,25 @@ message FlightResponse {
 
 
 
+// Covid cases messages
+
+message CovidCaseRequest {
+  string date = 1;
+  int32 area_level = 2;
+}
+
+message CovidCase{
+  string contry = 1;
+  string week = 2;
+  int32 covidCases = 3;
+}
+
+message CovidCaseResponse {
+  repeated CovidCase covidCases = 1;
+}
+
 service DataDelivery {
   rpc Airports (AirportRequest) returns (AirportResponse);
   rpc Flights (FlightRequest) returns (FlightResponse);
+  rpc CovidCases (CovidCaseRequest) returns (CovidCaseResponse);
 }

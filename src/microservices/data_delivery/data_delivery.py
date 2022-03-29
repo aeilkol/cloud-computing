@@ -5,17 +5,23 @@ from concurrent import futures
 import dotenv
 import psycopg2, psycopg2.extras
 import grpc
+
 from grpc_interceptor import ExceptionToStatusInterceptor
 import shapely, shapely.wkb
 
 from data_delivery_pb2 import (
     Airport,
     AirportResponse,
+
+    AirportResponse,
     Location,
     AirportType,
 
     Flight,
-    FlightResponse
+    FlightResponse,
+
+    CovidCaseResponse,
+    CovidCase,
 )
 import data_delivery_pb2_grpc
 
@@ -56,6 +62,19 @@ class DataDeliveryService(data_delivery_pb2_grpc.DataDeliveryServicer):
             )
         return FlightResponse(flights=flights_objects)
 
+    def CovidCases(self, request, context):
+        covidCases = self.database_service.getCovidCases(request.date, request.area_level)
+        covidCases_objects = []
+        for CovidCase in covidCases:
+            covidCases_objects.append(
+                CovidCase(
+                    contry = CovidCase['contry'],
+                    week = CovidCase['week'],
+                    covidCases = CovidCase['covidCases']
+                )
+            )
+        return CovidCaseResponse(covidCases=covidCases_objects)
+
 
 class DataDeliveryDatabaseService():
 
@@ -76,7 +95,6 @@ class DataDeliveryDatabaseService():
         cursor.execute(sql, params)
         return cursor.fetchall()
 
-
     def getFlights(self, date, continent=None):
         sql = '''
         SELECT f.* FROM flights AS f
@@ -93,6 +111,17 @@ class DataDeliveryDatabaseService():
         }
         cursor = self.connection.cursor()
         cursor.execute(sql, params)
+
+    def getCovidCases(self, date, area_level=None):
+        sql = '''
+        SELECT * FROM covid_cases 
+        WHERE date=TO_DATE(%s, 'YYYY-MM-DD')
+        '''
+        params =[date]
+        cursor = self.connection.cursor()
+        cursor.execute(sql, params)
+        return cursor.fetchall()
+
 
 def serve():
 
