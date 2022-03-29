@@ -12,7 +12,10 @@ from data_delivery_pb2 import (
     Airport,
     AirportResponse,
     Location,
-    AirportType
+    AirportType,
+
+    Flight,
+    FlightResponse
 )
 import data_delivery_pb2_grpc
 
@@ -38,6 +41,21 @@ class DataDeliveryService(data_delivery_pb2_grpc.DataDeliveryServicer):
             )
         return AirportResponse(airports=airport_objects)
 
+    def Flights(self, request, context):
+        flights = self.database_service.getFlights(request.date, request.continent)
+        flights_objects = []
+        for flight in flights:
+            flights_objects.append(
+                Flight(
+                    id=flight['id'],
+                    src=flight['src'],
+                    dest=flight['dest'],
+                    firstseen=flight['flightseen'],
+                    lastseen=flight['lastseen']
+                )
+            )
+        return FlightResponse(flights=flights_objects)
+
 
 class DataDeliveryDatabaseService():
 
@@ -58,6 +76,23 @@ class DataDeliveryDatabaseService():
         cursor.execute(sql, params)
         return cursor.fetchall()
 
+
+    def getFlights(self, date, continent=None):
+        sql = '''
+        SELECT f.* FROM flights AS f
+        JOIN airports AS a_o
+          ON a_o.code = f.origin
+        JOIN airports AS a_d
+          ON a_d.code = f.destination
+        WHERE (firstseen::date=TO_DATE(%(date)s, 'YYYY-MM-DD') OR lastseen::date=TO_DATE(%(date)s, 'YYYY-MM-DD'))
+          AND (a_o.continent=%(continent)s OR a_d.continent=%(continent)s OR %(continent)s IS NULL)
+        '''
+        params = {
+            'date': date,
+            'continent': continent
+        }
+        cursor = self.connection.cursor()
+        cursor.execute(sql, params)
 
 def serve():
 
