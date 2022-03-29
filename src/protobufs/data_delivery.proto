@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+// Airport messages
+
 message AirportRequest {
   string continent = 1;
 }
@@ -20,21 +22,24 @@ message AirportResponse {
   repeated Airport airports = 1;
 }
 
-service DataDelivery {
-  rpc Airports (AirportRequest) returns (AirportResponse);
-}
+// Covid cases messages
 
-message CovidCasesRequest {
+message CovidCaseRequest {
   string date = 1;
-  string area_level = 2;
+  int32 area_level = 2;
 }
 
 message CovidCase{
   string contry = 1;
-  string week = 2
-  int covidCases = 3;
+  string week = 2;
+  int32 covidCases = 3;
 }
 
-message CovidCasesResponse {
+message CovidCaseResponse {
   repeated CovidCase covidCases = 1;
+}
+
+service DataDelivery {
+  rpc Airports (AirportRequest) returns (AirportResponse);
+  rpc CovidCases (CovidCaseRequest) returns (CovidCaseResponse);
 }

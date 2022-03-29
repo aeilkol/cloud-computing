@@ -5,15 +5,13 @@ from concurrent import futures
 import dotenv
 import psycopg2
 import grpc
-import moment
-from datetime import datetime
 
 from grpc_interceptor import ExceptionToStatusInterceptor
 
 from data_delivery_pb2 import (
     Airport,
     AirportResponse,
-    CovidCasesResponse,
+    CovidCaseResponse,
     CovidCase
     
 )
@@ -48,8 +46,7 @@ class DataDeliveryService(data_delivery_pb2_grpc.DataDeliveryServicer):
                     covidCases = CovidCase['covidCases']
                 )
             )
-        return CovidCasesResponse(covidCases=covidCases_objects)
-       
+        return CovidCaseResponse(covidCases=covidCases_objects)
 
 
 class DataDeliveryDatabaseService():
@@ -68,11 +65,13 @@ class DataDeliveryDatabaseService():
         return cursor.fetchall()
 
     def getCovidCases(self, date, area_level=None):
-        sql = 'SELECT * FROM covid_cases WHERE year_week=%s'
-        params =[]
-        params.append(moment(date).endOf('week').format('YYYY-WW'))
+        sql = '''
+        SELECT * FROM covid_cases 
+        WHERE date=TO_DATE(%s, 'YYYY-MM-DD')
+        '''
+        params =[date]
         cursor = self.connection.cursor()
-        cursor.query(sql, params)
+        cursor.execute(sql, params)
         return cursor.fetchall()
 
 
