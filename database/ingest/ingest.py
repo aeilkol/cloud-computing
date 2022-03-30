@@ -1,13 +1,16 @@
-import dotenv
-import os, os.path
-import zipfile
-import psycopg2, psycopg2.errors
-from urllib import request
 import csv
-from shapely.geometry import shape
-from shapely import wkb
 import json
+import os
+import os.path
 import time
+import zipfile
+from urllib import request
+import requests
+
+import dotenv
+import psycopg2
+import psycopg2.errors
+from shapely.geometry import shape
 
 
 def check_if_db_contains_data(cursor):
@@ -50,25 +53,7 @@ def download_datasets():
 
 def download_flight_data(path):
 
-    dataset_creator = 'ishadss'
-    dataset_name = 'covid19-period-airtraffic-dataset'
-    zippath = os.path.join(path, dataset_name + '.zip')
-    unzipped_path = os.path.join(path, dataset_name)
-
-    if not os.path.exists(zippath):
-        from kaggle import api as kaggle_api
-
-        kaggle_name = '{}/{}'.format(dataset_creator, dataset_name)
-        kaggle_api.dataset_download_files(kaggle_name, path, quiet=False)
-        print('Finished downloading.')
-
-    if not os.path.exists(unzipped_path):
-        with zipfile.ZipFile(zippath, 'r') as zip_ref:
-            zip_ref.extractall(unzipped_path)
-
-        print('Finished extracting.')
-
-    return unzipped_path
+    return 'datasets/flights' # has to be predownloaded because zenodo api does not support file sizes larger than 100 MB
 
 
 def download_regions_data(path):
@@ -122,13 +107,33 @@ def create_tables(cursor):
     DROP TABLE IF EXISTS flights CASCADE;
     CREATE TABLE flights (
         id SERIAL PRIMARY KEY,
-        aircraft_uid VARCHAR(36),
         callsign VARCHAR(8),
         typecode VARCHAR(25),
         origin VARCHAR(25) REFERENCES airports(code),
         destination VARCHAR(25) REFERENCES airports(code),
         firstseen TIMESTAMP,
         lastseen TIMESTAMP
+    );
+                
+    DROP TABLE IF EXISTS imported_flights CASCADE;
+    CREATE TABLE imported_flights (
+        id SERIAL PRIMARY KEY,
+        callsign VARCHAR(8),
+        number VARCHAR(10),
+        icao24 VARCHAR(10),
+        registration VARCHAR(30),
+        typecode VARCHAR(50),
+        origin VARCHAR(25),
+        destination VARCHAR(25),
+        firstseen TIMESTAMP,
+        lastseen TIMESTAMP,
+        "day" VARCHAR(50),
+        latitude_1 FLOAT,
+        longitude_1 FLOAT,
+        altitude_1 FLOAT,
+        latitude_2 FLOAT,
+        longitude_2 FLOAT,
+        altitude_2 FLOAT
     );
     DROP TABLE IF EXISTS regions CASCADE;
     CREATE TABLE regions (
@@ -211,35 +216,45 @@ def ingest_covid(cursor, path):
 
 
 def ingest_flights(cursor, path):
-
-    sql = '''
-            INSERT INTO flights (aircraft_uid, callsign, typecode, origin, destination, firstseen, lastseen) VALUES
-            (%s, %s, %s, %s, %s, TO_TIMESTAMP(%s, 'YYYY-MM-DD HH24:MI:SS+00:00'), 
-            TO_TIMESTAMP(%s, 'YYYY-MM-DD HH24:MI:SS+00:00'));
-            '''
-
-    foreign_key_exists_sql = '''
-        SELECT count(*) AS c FROM airports WHERE code=%s;
-    '''
-    filenames = os.listdir(path)
-    max_flights = 100000
-    flights = 0
-    for filename in filenames:
-        with open(os.path.join(path, filename), 'r') as csvfile:
-            csvreader = csv.DictReader(csvfile)
-            for line in csvreader:
-                if line['origin'] and line['destination']:
-                    insert = [line['aircraft_uid'], line['callsign'], line['typecode'], line['origin'], line['destination'],
-                              line['firstseen'], line['lastseen']]
-                    cursor.execute(foreign_key_exists_sql, [line['origin']])
-                    origin_exists = cursor.fetchone()[0]
-                    cursor.execute(foreign_key_exists_sql, [line['destination']])
-                    destination_exists = cursor.fetchone()[0]
-                    if origin_exists and destination_exists:
-                        cursor.execute(sql, insert)
-                flights += 1
-                if flights >= max_flights:
-                    return
+    pass
+    # sql = '''
+    #         INSERT INTO flights (callsign, typecode, origin, destination, firstseen, lastseen) VALUES
+    #         (%s, %s, %s, %s, TO_TIMESTAMP(%s, 'YYYY-MM-DD HH24:MI:SS+00:00'),
+    #         TO_TIMESTAMP(%s, 'YYYY-MM-DD HH24:MI:SS+00:00'));
+    #         '''
+    #
+    # foreign_key_exists_sql = '''
+    #     SELECT count(*) AS c FROM airports WHERE code=%s;
+    # '''
+    # filenames = os.listdir(path)
+    # max_flights = 1000000000
+    # flights = 0
+    # start = time.time()
+    # for filename in filenames:
+        # with open(os.path.join(path, filename), 'r') as csvfile:
+        #     csvreader = csv.DictReader(csvfile)
+        #     for line in csvreader:
+        #         if line['origin'] and line['destination']:
+        #             insert = [line['callsign'], line['typecode'], line['origin'], line['destination'],
+        #                       line['firstseen'], line['lastseen']]
+        #             cursor.execute(foreign_key_exists_sql, [line['origin']])
+        #             origin_exists = cursor.fetchone()[0]
+        #             cursor.execute(foreign_key_exists_sql, [line['destination']])
+        #             destination_exists = cursor.fetchone()[0]
+        #             if origin_exists and destination_exists:
+        #                 cursor.execute(sql, insert)
+        #         flights += 1
+        #         if flights >= max_flights:
+        #             return
+        #         if flights % 100000 == 0:
+        #             print('Flights ingested: {}, Time: {}'.format(flights, time.time() - start))
+        # sql = '''
+        # COPY imported_flights
+        # FROM {}
+        # WITH (format csv, header)
+        # '''.format(os.path.join(path, filename))
+        # cursor.execute(sql)
+        # print('Finished file {}'.format(filename))
 
 
 if __name__ == '__main__':
