@@ -39,20 +39,14 @@ message FlightRequest {
 }
 
 message Flight {
-  int32 id = 1;
-  string src = 2;
-  string dest = 3;
-  string firstseen = 4;
-  string lastseen = 5;
+  string src = 1;
+  string dest = 2;
+  int32 cardinality = 3;
 }
 
 message FlightResponse {
   repeated Flight flights = 1;
 }
-
-// Airport covid cases RPC
-
-
 
 // Covid cases messages
 
@@ -61,18 +55,56 @@ message CovidCaseRequest {
   int32 area_level = 2;
 }
 
-message CovidCase{
-  string contry = 1;
-  string week = 2;
-  int32 covidCases = 3;
+message CovidCase {
+  string region = 1;
+  string date = 2;
+  float incidence = 3;
 }
 
 message CovidCaseResponse {
-  repeated CovidCase covidCases = 1;
+  repeated CovidCase covid_cases = 1;
 }
+
+// Airport covid case messages
+
+message AirportCovidCaseRequest {
+  string airport_code = 1;
+  int32 area_level = 2;
+}
+
+message AirportCovidCase {
+  string date = 1;
+  float incidence = 2;
+}
+
+message AirportCovidCaseResponse {
+  repeated AirportCovidCase incidences = 1;
+  string region = 2;
+  string airport_code = 3;
+}
+
+// Flights by date messages
+
+message FlightsByDateRequest {
+  string airport_code = 1;
+  bool origin = 2;
+}
+
+message FlightByDate {
+  string date = 1;
+  int32 count = 2;
+}
+
+message FlightsByDateResponse {
+  repeated FlightByDate flights = 1;
+}
+
+// Service
 
 service DataDelivery {
   rpc Airports (AirportRequest) returns (AirportResponse);
   rpc Flights (FlightRequest) returns (FlightResponse);
   rpc CovidCases (CovidCaseRequest) returns (CovidCaseResponse);
+  rpc AirportCovidCases (AirportCovidCaseRequest) returns (AirportCovidCaseResponse);
+  rpc FlightsByDate (FlightsByDateRequest) returns (FlightsByDateResponse);
 }

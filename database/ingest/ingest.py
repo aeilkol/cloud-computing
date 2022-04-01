@@ -154,7 +154,7 @@ def create_tables(cursor):
         incidence REAL
     );
     '''
-    cursor.execute(create_db_sql, [])
+    #cursor.execute(create_db_sql, [])
 
 
 def ingest(cursor, destinations):
@@ -180,7 +180,7 @@ def ingest_airports(cursor, path):
         for line in csvreader:
             insert = [line['ident'], line['name'], line['type'], None, line['continent'], line['longitude_deg'], line['latitude_deg']]
             insert[3] = line['elevation_ft'] if line['elevation_ft'] else None
-            cursor.execute(sql, insert)
+            #cursor.execute(sql, insert)
 
 
 def ingest_regions(cursor, path):

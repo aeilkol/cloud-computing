@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+// Airport analysis messages
+
+message AirportAnalysisRequest {
+  string airport_code = 1;
+  bool origin = 2;
+}
+
+message AirportAnalysis {
+  string date = 1;
+  float covid_flight_factor = 2;
+}
+
+message AirportAnalysisResponse {
+  repeated AirportAnalysis analysis = 1;
+}
+
+// Service
+
+service DataAnalysis {
+  rpc AirportAnalysis (AirportAnalysisRequest) returns (AirportAnalysisResponse);
+}

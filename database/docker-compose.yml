@@ -3,7 +3,7 @@ version: '3'
 services:
   db:
     image: postgis/postgis
-    container_name: postgis_db_small
+    container_name: postgis_db
     ports:
       - "5432:5432"
     volumes:

@@ -1,5 +1,6 @@
 import time
 import os
+import argparse
 from concurrent import futures
 
 import dotenv
@@ -12,16 +13,20 @@ import shapely, shapely.wkb
 from data_delivery_pb2 import (
     Airport,
     AirportResponse,
-
-    AirportResponse,
     Location,
     AirportType,
 
     Flight,
     FlightResponse,
 
-    CovidCaseResponse,
     CovidCase,
+    CovidCaseResponse,
+
+    AirportCovidCase,
+    AirportCovidCaseResponse,
+
+    FlightByDate,
+    FlightsByDateResponse
 )
 import data_delivery_pb2_grpc
 
@@ -33,7 +38,7 @@ class DataDeliveryService(data_delivery_pb2_grpc.DataDeliveryServicer):
 
     def Airports(self, request, context):
         airport_type = AirportType.Name(request.airport_type)
-        airports = self.database_service.getAirports(request.continent, airport_type)
+        airports = self.database_service.get_airports(request.continent, airport_type)
         airport_objects = []
         for airport in airports:
             shapely_location = shapely.wkb.loads(airport['location'], hex=True)
@@ -48,32 +53,36 @@ class DataDeliveryService(data_delivery_pb2_grpc.DataDeliveryServicer):
         return AirportResponse(airports=airport_objects)
 
     def Flights(self, request, context):
-        flights = self.database_service.getFlights(request.date, request.continent)
-        flights_objects = []
-        for flight in flights:
-            flights_objects.append(
-                Flight(
-                    id=flight['id'],
-                    src=flight['src'],
-                    dest=flight['dest'],
-                    firstseen=flight['flightseen'],
-                    lastseen=flight['lastseen']
-                )
-            )
-        return FlightResponse(flights=flights_objects)
+        connections = self.database_service.get_flights(request.date, request.continent)
+        connection_objects = [Flight(src=connection['origin'],
+                                     dest=connection['destination'],
+                                     cardinality=connection['cardinality'])
+                              for connection in connections]
+        return FlightResponse(flights=connection_objects)
 
     def CovidCases(self, request, context):
-        covidCases = self.database_service.getCovidCases(request.date, request.area_level)
-        covidCases_objects = []
-        for CovidCase in covidCases:
-            covidCases_objects.append(
-                CovidCase(
-                    contry = CovidCase['contry'],
-                    week = CovidCase['week'],
-                    covidCases = CovidCase['covidCases']
-                )
-            )
-        return CovidCaseResponse(covidCases=covidCases_objects)
+        covid_cases = self.database_service.get_covid_cases(request.date, request.area_level)
+        covid_case_objects = [CovidCase(region=covid_case['region_id'],
+                                        date=str(covid_case['date']),
+                                        incidence=covid_case['incidence'])
+                              for covid_case in covid_cases]
+        return CovidCaseResponse(covid_cases=covid_case_objects)
+
+    def AirportCovidCases(self, request, context):
+        airport_covid_cases = self.database_service.get_airport_covid_cases(request.airport_code)
+        airport_covid_case_objects = [AirportCovidCase(date=str(incidence['date']),
+                                                       incidence=incidence['incidence'])
+                                      for incidence in airport_covid_cases['incidences']]
+        return AirportCovidCaseResponse(incidences=airport_covid_case_objects,
+                                        airport_code=request.airport_code,
+                                        region=airport_covid_cases['region_id'])
+
+    def FlightsByDate(self, request, context):
+        flights_by_date = self.database_service.get_flights_by_date(request.airport_code, request.origin)
+        flights_by_date_objects = [FlightByDate(date=str(flight_by_date['date']),
+                                                count=flight_by_date['count'])
+                                   for flight_by_date in flights_by_date]
+        return FlightsByDateResponse(flights=flights_by_date_objects)
 
 
 class DataDeliveryDatabaseService():
@@ -81,7 +90,7 @@ class DataDeliveryDatabaseService():
     def __init__(self, connection):
         self.connection = connection
 
-    def getAirports(self, continent=None, airport_type=None):
+    def get_airports(self, continent=None, airport_type=None):
         sql = '''
             SELECT * FROM airports
             WHERE (continent = %(continent)s OR %(continent)s IS NULL)
@@ -95,30 +104,83 @@ class DataDeliveryDatabaseService():
         cursor.execute(sql, params)
         return cursor.fetchall()
 
-    def getFlights(self, date, continent=None):
+    def get_flights(self, date, continent=None):
         sql = '''
-        SELECT f.* FROM flights AS f
+        SELECT f.origin, f.destination, COUNT(*) AS cardinality FROM imported_flights_to_keep AS f
         JOIN airports AS a_o
           ON a_o.code = f.origin
         JOIN airports AS a_d
           ON a_d.code = f.destination
         WHERE (firstseen::date=TO_DATE(%(date)s, 'YYYY-MM-DD') OR lastseen::date=TO_DATE(%(date)s, 'YYYY-MM-DD'))
-          AND (a_o.continent=%(continent)s OR a_d.continent=%(continent)s OR %(continent)s IS NULL)
+          AND (a_o.continent=%(continent)s AND a_d.continent=%(continent)s OR %(continent)s IS NULL)
+        GROUP BY f.origin, f.destination
         '''
         params = {
             'date': date,
             'continent': continent
         }
-        cursor = self.connection.cursor()
+        cursor = self.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql, params)
+        return cursor.fetchall()
 
-    def getCovidCases(self, date, area_level=None):
+    def get_covid_cases(self, date, area_level=None):
         sql = '''
         SELECT * FROM covid_cases 
         WHERE date=TO_DATE(%s, 'YYYY-MM-DD')
         '''
         params =[date]
-        cursor = self.connection.cursor()
+        cursor = self.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(sql, params)
+        return cursor.fetchall()
+
+    def get_airport_covid_cases(self, airport_code, area_level=3):
+        region_id = self.get_airport_region(airport_code, area_level)
+        sql = '''
+        SELECT c_c.incidence, c_c.date FROM covid_cases c_c
+        JOIN regions r
+        ON c_c.region_id = r.id AND r.id = %(region_id)s
+        '''
+        params = {
+            'region_id': region_id
+        }
+        cursor = self.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(sql, params)
+        return {
+            'region_id': region_id,
+            'incidences': cursor.fetchall()
+        }
+
+    def get_airport_region(self, airport_code, area_level):
+        sql = '''
+        SELECT r.id AS region_id FROM regions r
+        LEFT JOIN airports a
+        ON ST_INTERSECTS(a.location, r.geom)
+        WHERE a.code = %(airport_code)s
+        AND r.level = %(area_level)s
+        '''
+        params = {
+            'airport_code': airport_code,
+            'area_level': area_level
+        }
+        cursor = self.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(sql, params)
+        region_return = cursor.fetchone()
+        if len(region_return) == 0:
+            raise LookupError('No region for this airport could be found')
+        return region_return['region_id']
+
+    def get_flights_by_date(self, airport_code, origin):
+        column = 'origin' if origin else 'destination'
+        sql = '''
+        SELECT firstseen::DATE AS date, COUNT(*) AS count FROM flights
+        WHERE {} = %(airport_code)s
+        GROUP BY firstseen::DATE
+        ORDER BY firstseen::DATE
+        '''.format(column, column)
+        params = {
+            'airport_code': airport_code
+        }
+        cursor = self.connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cursor.execute(sql, params)
         return cursor.fetchall()
 
@@ -156,6 +218,9 @@ def serve():
 
 
 if __name__ == '__main__':
-
-    dotenv.load_dotenv('.env')
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('--env', '-e')
+    arguments = argparser.parse_args()
+    env_path = arguments.env if arguments.env else '../.env'
+    dotenv.load_dotenv(arguments.env)
     serve()

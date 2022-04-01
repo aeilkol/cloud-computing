@@ -10,6 +10,26 @@ How to get database running and ingest data:
 6. Unzip all csv files and put them into an appropriate folder.
 7. Start psql in terminal with `psql -U postgres -p 5432 -h localhost flights_covid`.
 8. In psql run `\copy imported_flights(callsign, number, icao24, registration, typecode, origin, destination, firstseen, lastseen, day, latitude_1, longitude_1, altitude_1, latitude_2, longitude_2, altitude_2) from '<path_to_csv>' with (format csv, header);` for every existing csv file.
+9. After the import run the following two queries to remove unnecessary flight rows that are not inside europe:
+`delete from imported_flights i_f
+using airports a
+where i_f.origin = a.code and a.continent != 'EU'`
+and
+`delete from imported_flights i_f
+using airports a
+where i_f.destination = a.code and a.continent != 'EU'`
+10. Also set the foreign keys to speed-up joins on flights:
+`
+alter table flights
+add constraint origin_fk foreign key (origin) references airports (code)
+on update restrict on delete restrict
+`
+and
+`
+alter table flights
+add constraint destination_fk foreign key (destination) references airports (code)
+on update restrict on delete restrict
+`
 
 How to run actual code:
 
