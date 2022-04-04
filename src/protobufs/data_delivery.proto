@@ -1,5 +1,15 @@
 syntax = "proto3";
 
+// Airport messages
+
+enum AirportType {
+  large_airport = 0;
+  medium_airport = 1;
+  small_aiprort= 2;
+  heliport = 3;
+  closed = 4;
+}
+
 message AirportRequest {
   string continent = 1;
 }
@@ -20,53 +30,80 @@ message AirportResponse {
   repeated Airport airports = 1;
 }
 
+// Flight messages
+
 message FlightRequest {
   string date = 1;
   string continent = 2;
 }
 
 message Flight {
-  int32 id = 1;
-  string src = 2;
-  string dest = 3;
-  string firstseen = 4;
-  string lastseen = 5;
+  string src = 1;
+  string dest = 2;
+  int32 cardinality = 3;
 }
 
 message FlightResponse {
   repeated Flight flights = 1;
 }
 
-message CovidCasesRequest {
+// Covid cases messages
+
+message CovidCaseRequest {
   string date = 1;
-  string area_level = 2;
+  int32 area_level = 2;
 }
 
-message CovidCase{
-  string contry = 1;
-  string week = 2;
-  int32 covidCases = 3;
+message CovidCase {
+  string region = 1;
+  string date = 2;
+  float incidence = 3;
 }
 
-message CovidCasesResponse {
-  repeated CovidCase covidCases = 1;
+message CovidCaseResponse {
+  repeated CovidCase covid_cases = 1;
 }
 
-message AirportCovidCasesRequest {
+// Airport covid case messages
+
+message AirportCovidCaseRequest {
   string airport_code = 1;
   int32 area_level = 2;
 }
 
 message AirportCovidCase {
-  string region = 1;
-  int32 incidence = 2;
-  string date = 3;
+  string date = 1;
+  float incidence = 2;
 }
 
 message AirportCovidCaseResponse {
-  repeated AirportCovidCase covid_cases = 1;
+  repeated AirportCovidCase incidences = 1;
+  string region = 2;
+  string airport_code = 3;
 }
+
+// Flights by date messages
+
+message FlightsByDateRequest {
+  string airport_code = 1;
+  bool origin = 2;
+}
+
+message FlightByDate {
+  string date = 1;
+  int32 count = 2;
+}
+
+message FlightsByDateResponse {
+  repeated FlightByDate flights = 1;
+}
+
+// Service
 
 service DataDelivery {
   rpc Airports (AirportRequest) returns (AirportResponse);
+  rpc Flights (FlightRequest) returns (FlightResponse);
+  rpc CovidCases (CovidCaseRequest) returns (CovidCaseResponse);
+  rpc AirportCovidCases (AirportCovidCaseRequest) returns (AirportCovidCaseResponse);
+  rpc FlightsByDate (FlightsByDateRequest) returns (FlightsByDateResponse);
 }
