@@ -2,6 +2,7 @@ from datetime import timedelta
 import datetime
 import argparse
 from concurrent import futures
+import os
 
 import dotenv
 import grpc
@@ -23,8 +24,8 @@ from data_delivery_pb2 import (
 class DataDeliveryService(data_analysis_pb2_grpc.DataAnalysisServicer):
 
     def __init__(self):
-
-        data_delivery_channel = grpc.insecure_channel('localhost:50051', options=(('grpc.enable_http_proxy', 0),))
+        data_delivery_address = '{}:{}'.format(os.environ['DATA_DELIVERY_ADDRESS'], os.environ['DATA_DELIVERY_PORT'])
+        data_delivery_channel = grpc.insecure_channel(data_delivery_address, options=(('grpc.enable_http_proxy', 0),))
         self.data_delivery_client = DataDeliveryStub(data_delivery_channel)
 
     def AirportAnalysis(self, request, context):
@@ -79,9 +80,10 @@ def serve():
 
 
 if __name__ == '__main__':
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument('--env', '-e')
-    arguments = argparser.parse_args()
-    env_path = arguments.env if arguments.env else '../.env'
-    dotenv.load_dotenv(arguments.env)
+    if not 'DATA_DELIVERY_ADDRESS' in os.environ:
+        argparser = argparse.ArgumentParser()
+        argparser.add_argument('--env', '-e')
+        arguments = argparser.parse_args()
+        env_path = arguments.env if arguments.env else '.env'
+        dotenv.load_dotenv(arguments.env)
     serve()
