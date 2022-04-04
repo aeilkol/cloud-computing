@@ -19,18 +19,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-  #ingestion:
-  #  image: ingest
-  #  networks:
-  #    - ingest
-  #  env_file:
-  #    - .env
-  #  volumes:
-  #    - type: volume
-  #      target: /home/ingest/datasets
 volumes:
   dbdata:
-  init_sql:
   datasets:
 networks:
   ingest:
