@@ -30,6 +30,7 @@ from data_delivery_pb2 import (
 )
 import data_delivery_pb2_grpc
 
+from runtime_interceptor import RuntimeInterceptor
 
 class DataDeliveryService(data_delivery_pb2_grpc.DataDeliveryServicer):
 
@@ -106,7 +107,7 @@ class DataDeliveryDatabaseService():
 
     def get_flights(self, date, continent=None):
         sql = '''
-        SELECT f.origin, f.destination, COUNT(*) AS cardinality FROM imported_flights_to_keep AS f
+        SELECT f.origin, f.destination, COUNT(*) AS cardinality FROM flights AS f
         JOIN airports AS a_o
           ON a_o.code = f.origin
         JOIN airports AS a_d
@@ -202,7 +203,7 @@ def serve():
             if retries == max_retries:
                 raise EnvironmentError('Database connection failed')
 
-    interceptors = [ExceptionToStatusInterceptor()]
+    interceptors = [ExceptionToStatusInterceptor(), RuntimeInterceptor(conn)]
 
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10), interceptors=interceptors
@@ -221,6 +222,6 @@ if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
     argparser.add_argument('--env', '-e')
     arguments = argparser.parse_args()
-    env_path = arguments.env if arguments.env else '../.env'
+    env_path = arguments.env if arguments.env else '.env'
     dotenv.load_dotenv(arguments.env)
     serve()
