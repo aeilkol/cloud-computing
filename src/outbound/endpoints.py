@@ -19,7 +19,7 @@ data_analysis_channel = grpc.insecure_channel('localhost:50052', options=(('grpc
 data_analysis_client = DataAnalysisStub(data_analysis_channel)
 
 
-def read_all_airports(continent, airport_type):
+def read_all_airports(continent, airport_type=1):
     request = AirportRequest(
         continent=continent,
         airport_type=airport_type

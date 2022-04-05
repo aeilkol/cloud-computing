@@ -12,6 +12,7 @@ enum AirportType {
 
 message AirportRequest {
   string continent = 1;
+  AirportType airport_type = 2;
 }
 
 message Location {

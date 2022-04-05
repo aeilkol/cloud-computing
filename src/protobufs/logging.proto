@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message LoggingRequest {
+  string message = 1;
+  int32 level = 2;
+}
+
+message LoggingResponse {
+  bool logged = 1;
+}
+
+// service
+service LoggingService {
+  rpc Logging(LoggingRequest) returns (LoggingResponse);
+}

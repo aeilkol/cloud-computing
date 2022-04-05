@@ -2,6 +2,7 @@ from datetime import timedelta
 import datetime
 import argparse
 from concurrent import futures
+from email import message
 import os
 
 import dotenv
@@ -19,6 +20,8 @@ from data_delivery_pb2 import (
     AirportCovidCaseRequest,
     FlightsByDateRequest
 )
+from logging_pb2_grpc import LoggingServiceStub
+from logging_pb2 import LoggingRequest
 
 
 class DataDeliveryService(data_analysis_pb2_grpc.DataAnalysisServicer):
@@ -28,7 +31,19 @@ class DataDeliveryService(data_analysis_pb2_grpc.DataAnalysisServicer):
         data_delivery_channel = grpc.insecure_channel(data_delivery_address, options=(('grpc.enable_http_proxy', 0),))
         self.data_delivery_client = DataDeliveryStub(data_delivery_channel)
 
+        logging_address = '{}:{}'.format(os.environ['LOGGING_ADDRESS'], os.environ['LOGGING_PORT'])
+        logging_channel = grpc.insecure_channel(logging_address, options=(('grpc.enable_http_proxy', 0),))
+        self.logging_client = LoggingServiceStub(logging_channel)
+
+
     def AirportAnalysis(self, request, context):
+        log_request = LoggingRequest(
+            message='A call to AirportAnalysis was made',
+            level=20
+        )
+        self.logging_client.Logging(log_request)
+
+
         flights_request = FlightsByDateRequest(
             airport_code=request.airport_code,
             origin=request.origin

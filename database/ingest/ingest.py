@@ -94,7 +94,7 @@ def download_airport_data(path):
 
 def create_tables(cursor):
 
-    create_db_sql = ''' 
+    create_db_sql = '''
     DROP TABLE IF EXISTS airports CASCADE;
     CREATE TABLE airports (
         code VARCHAR(25) PRIMARY KEY,
@@ -103,7 +103,7 @@ def create_tables(cursor):
         elevation REAL,
         continent VARCHAR(2),
         location GEOGRAPHY(POINT)
-    );             
+    );
     DROP TABLE IF EXISTS flights CASCADE;
     CREATE TABLE flights (
         id SERIAL PRIMARY KEY,
@@ -114,7 +114,7 @@ def create_tables(cursor):
         firstseen TIMESTAMP,
         lastseen TIMESTAMP
     );
-                
+
     DROP TABLE IF EXISTS imported_flights CASCADE;
     CREATE TABLE imported_flights (
         id SERIAL PRIMARY KEY,
@@ -154,7 +154,7 @@ def create_tables(cursor):
         incidence REAL
     );
     '''
-    #cursor.execute(create_db_sql, [])
+    cursor.execute(create_db_sql, [])
 
 
 def ingest(cursor, destinations):
@@ -186,7 +186,7 @@ def ingest_airports(cursor, path):
 def ingest_regions(cursor, path):
 
     sql = '''
-    INSERT INTO regions (id, level, geom, center_code, name, mount_type, urbn_type, coast_type) VALUES 
+    INSERT INTO regions (id, level, geom, center_code, name, mount_type, urbn_type, coast_type) VALUES
     (%s, %s, ST_Multi(ST_SetSRID(%s::geometry, 4326)), %s, %s, %s, %s, %s)
     '''
 
