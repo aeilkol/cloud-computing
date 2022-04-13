@@ -7,6 +7,9 @@ import requests
 import urllib.request
 import gzip
 import shutil
+import datetime
+import re
+import codecs
 
 import dotenv
 import psycopg2
@@ -163,18 +166,19 @@ def create_tables(cursor):
         id SERIAL PRIMARY KEY,
         service VARCHAR (50),
         request VARCHAR(50),
-        runtime NUMERIC
+        runtime NUMERIC,
+        stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     '''
     cursor.execute(create_db_sql, [])
 
 
 def ingest(cursor, destinations, conn):
-    ingest_airports(cursor, destinations['airports'])
+    #ingest_airports(cursor, destinations['airports'])
     print('Ingested airports')
     ingest_regions(cursor, destinations['regions'])
     print('Ingested regions')
-    ingest_flights(cursor, destinations['flights'], conn)
+    #ingest_flights(cursor, destinations['flights'], conn)
     print('Ingested flights')
     ingest_covid(cursor, destinations['covid'])
     print('Ingested covid cases')
@@ -215,15 +219,19 @@ def ingest_regions(cursor, path):
 
 def ingest_covid(cursor, path):
     sql = '''
-        INSERT INTO covid_cases (region_id, incidence, date) VALUES
-        (%s, %s, TO_DATE(%s, 'YYYYMMDD'));
+        INSERT INTO covid_cases (region_id, incidence, date) 
+        VALUES (%s, %s, %s);
         '''
 
-    with open(path, 'r') as csvfile:
+    with codecs.open(path, 'r', encoding='ISO-8859-2') as csvfile:
         csvreader = csv.DictReader(csvfile)
         for line in csvreader:
-            insert = [line['nuts_code'], None, line['date']]
-            insert[1] = line['rate_14_day_per_100k'] if line['rate_14_day_per_100k'] else None
+            if re.match('[0-9]{4}-[0-9]{2}-[0-9]{2}', line['date']):
+                date = datetime.datetime.strptime(line['date'], '%Y-%m-%d').date()
+            else:
+                date = datetime.datetime.strptime(line['date'], '%Y%m%d').date()
+            insert = [line['nuts_code'], None, date]
+            insert[1] = line['rate_14_day_per_100k'] if line['rate_14_day_per_100k'] and line['rate_14_day_per_100k'] != 'NA' else None
             cursor.execute(sql, insert)
 
 
@@ -242,7 +250,6 @@ def ingest_flights(cursor, path, conn):
     DROP TABLE imported_flights
     '''
     cursor.execute(drop_sql)
-
 
 
 if __name__ == '__main__':
