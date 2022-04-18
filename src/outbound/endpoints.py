@@ -13,9 +13,11 @@ if os.environ.get('https_proxy'):
 if os.environ.get('http_proxy'):
     del os.environ['http_proxy']
 
-data_delivery_channel = grpc.insecure_channel('localhost:50051', options=(('grpc.enable_http_proxy', 0),))
+data_delivery_channel = grpc.insecure_channel('{}:{}'.format(os.environ['DATA_DELIVERY_ADDRESS'], os.environ['DATA_DELIVERY_PORT']),
+                                              options=(('grpc.enable_http_proxy', 0),))
 data_delivery_client = DataDeliveryStub(data_delivery_channel)
-data_analysis_channel = grpc.insecure_channel('localhost:50052', options=(('grpc.enable_http_proxy', 0),))
+data_analysis_channel = grpc.insecure_channel('{}:{}'.format(os.environ['DATA_ANALYSIS_ADDRESS'], os.environ['DATA_ANALYSIS_PORT']),
+                                              options=(('grpc.enable_http_proxy', 0),))
 data_analysis_client = DataAnalysisStub(data_analysis_channel)
 
 

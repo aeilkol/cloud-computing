@@ -108,7 +108,7 @@ def serve():
         DataAnalysisService(), server
     )
 
-    server.add_insecure_port("[::]:50052")
+    server.add_insecure_port("[::]:{}".format(os.environ['OUT_PORT']))
     server.start()
     server.wait_for_termination()
 

@@ -10,7 +10,6 @@ import grpc
 from grpc_interceptor import ExceptionToStatusInterceptor
 
 from administrator_analysis_pb2 import (
-    RequestAnalysisRequest,
     RequestAnalysisResponse
 )
 import administrator_analysis_pb2_grpc
@@ -21,7 +20,9 @@ class AdministratorAnalysisService(administrator_analysis_pb2_grpc.Administrator
         self.database_service = AdministratorAnalysisDatabaseService(connection)
 
     def RequestAnalysis(self, request, context):
-        pass
+        avg_runtime = self.database_service.get_average_runtime(request.service, request.request, request.start_time,
+                                                                request.end_time)
+        return RequestAnalysisResponse(average_runtime=avg_runtime)
 
 
 class AdministratorAnalysisDatabaseService():
@@ -77,7 +78,7 @@ def serve():
         AdministratorAnalysisService(conn), server
     )
 
-    server.add_insecure_port("[::]:50054")
+    server.add_insecure_port("[::]:{}".format(os.environ['OUT_PORT']))
     server.start()
     server.wait_for_termination()
 
