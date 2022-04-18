@@ -8,7 +8,6 @@ services:
       - "5432:5432"
     volumes:
       - dbdata:/var/lib/postgres
-      - init_sql:/docker-entrypoint-initdb.d/
     environment:
       POSTGRES_PASSWORD: "${DB_PASS}"
       POSTGRES_DB: "${DB_NAME}"
@@ -19,18 +18,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-  #ingestion:
-  #  image: ingest
-  #  networks:
-  #    - ingest
-  #  env_file:
-  #    - .env
-  #  volumes:
-  #    - type: volume
-  #      target: /home/ingest/datasets
 volumes:
   dbdata:
-  init_sql:
   datasets:
 networks:
   ingest:

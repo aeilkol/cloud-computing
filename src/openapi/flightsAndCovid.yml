@@ -65,26 +65,22 @@ paths:
         "404":
           $ref: '#/components/responses/not_found'
 
-  #/airport_statistics:
-  #  get:
-  #    tags:
-  #    - Airports And Flights
-  #    summary: Get some statistics on covid and flights on a certain date
-  #    description: Get some statistics on covid and flights on a certain date
-  #    operationId: flights.read_statistics
-  #    parameters:
-  #      - name: data
-  #        in: query
-  #      - $ref: '#/components/schemas/airport'
-  #    responses:
-  #      "200":
-  #        description: Successful response
-  #        content:
-  #          application/json:
-  #            schema:
-  #              $ref: '#/components/schemas/200'
-  #      "404":
-  #        $ref: '#/components/response/not_found'
+  /airport_statistics:
+    get:
+      tags:
+      - Airports And Flights
+      summary: Get some statistics on covid and flights on a certain date
+      description: Get some statistics on covid and flights on a certain date
+      operationId: endpoints.read_statistics
+      parameters:
+        - $ref: '#/components/parameters/airport_code'
+        - $ref: '#/components/parameters/origin'
+          description: true for statistics for outgoing flights, false for incoming flights
+      responses:
+        "200":
+          $ref: '#/components/responses/airport_statistics'
+        "404":
+          $ref: '#/components/responses/not_found'
 
   /airport_covid_cases:
     get:
@@ -183,6 +179,15 @@ components:
           type: string
           format: date
 
+    airport_statistic:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        covid_flight_factor:
+          type: number
+          format: float
 
   parameters:
 
@@ -227,6 +232,14 @@ components:
       schema:
         $ref: '#/components/schemas/airport_code'
 
+    origin:
+      name: origin
+      description: boolean indicating incoming or outgoing flights
+      in: query
+      required: true
+      schema:
+        type: boolean
+
   responses:
 
     airports:
@@ -255,6 +268,16 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/covid_cases'
+
+    airport_statistics:
+      description: Statistics regarding the connection between covid cases and flights in an airport region
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/airport_statistic'
+
 
     not_found:
       description: Not found response

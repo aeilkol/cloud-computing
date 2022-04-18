@@ -1,24 +1,28 @@
-import dotenv
-import os, os.path
-import zipfile
-import psycopg2, psycopg2.errors
-from urllib import request
 import csv
-from shapely.geometry import shape
-from shapely import wkb
 import json
+import os
+import os.path
 import time
+import requests
+import urllib.request
+import gzip
+import shutil
+import datetime
+import re
+import codecs
 
+import dotenv
+import psycopg2
+import psycopg2.errors
+from shapely.geometry import shape
 
-def check_if_db_contains_data(cursor):
-    pass
-
-
-def check_airport_table(cursor):
-    sql = 'SELECT COUNT(*) AS count FROM airports'
-
-    cursor.execute(sql, [])
-    count = cursor.fetchone()
+def create_database():
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{}'".format(os.environ['DB_NAME']))
+    exists = cursor.fetchone()
+    if not exists:
+        cursor.execute('CREATE DATABASE {}'.format(os.environ['DB_NAME']))
+        cursor.execute('CREATE EXTENSION postgis')
 
 
 def download_datasets():
@@ -49,26 +53,25 @@ def download_datasets():
 
 
 def download_flight_data(path):
-
-    dataset_creator = 'ishadss'
-    dataset_name = 'covid19-period-airtraffic-dataset'
-    zippath = os.path.join(path, dataset_name + '.zip')
-    unzipped_path = os.path.join(path, dataset_name)
-
-    if not os.path.exists(zippath):
-        from kaggle import api as kaggle_api
-
-        kaggle_name = '{}/{}'.format(dataset_creator, dataset_name)
-        kaggle_api.dataset_download_files(kaggle_name, path, quiet=False)
-        print('Finished downloading.')
-
-    if not os.path.exists(unzipped_path):
-        with zipfile.ZipFile(zippath, 'r') as zip_ref:
-            zip_ref.extractall(unzipped_path)
-
-        print('Finished extracting.')
-
-    return unzipped_path
+    flight_path = 'datasets/flights'
+    if not os.path.exists(flight_path):
+        os.mkdir(flight_path)
+    record_id = 6325961
+    record = requests.get('https://zenodo.org/api/records/%s' % record_id, params={'access_token': os.environ['ZENODO_KEY']})
+    max_entries = 24
+    entries = 0
+    for file_record in json.loads(record.content.decode('utf-8'))['files']:
+        file_path = os.path.join(flight_path, file_record['key'])
+        if not os.path.exists(file_path[:-3]):
+            urllib.request.urlretrieve(file_record['links']['self'], file_path)
+            with gzip.open(file_path, 'rb') as zip_file:
+                with open(file_path[:-3], 'wb') as csv_file:
+                    shutil.copyfileobj(zip_file, csv_file)
+            os.remove(file_path)
+        entries += 1
+        if entries >= max_entries:  # only want the 24 first months in the dataset
+            break
+    return flight_path
 
 
 def download_regions_data(path):
@@ -78,7 +81,7 @@ def download_regions_data(path):
 
     if not os.path.exists(regions_path):
         regions_url = 'https://gisco-services.ec.europa.eu/distribution/v2/nuts/geojson/NUTS_RG_01M_2016_4326.geojson'
-        request.urlretrieve(regions_url, regions_path)
+        urllib.request.urlretrieve(regions_url, regions_path)
 
     return regions_path
 
@@ -90,7 +93,7 @@ def download_covid_data(path):
 
     if not os.path.exists(covid_path):
         covid_url = 'https://opendata.ecdc.europa.eu/covid19/subnationalcasedaily/csv/data.csv'
-        request.urlretrieve(covid_url, covid_path)
+        urllib.request.urlretrieve(covid_url, covid_path)
 
     return covid_path
 
@@ -102,14 +105,14 @@ def download_airport_data(path):
 
     if not os.path.exists(airport_path):
         covid_url = 'http://ourairports.com/data/airports.csv'
-        request.urlretrieve(covid_url, airport_path)
+        urllib.request.urlretrieve(covid_url, airport_path)
 
     return airport_path
 
 
 def create_tables(cursor):
 
-    create_db_sql = ''' 
+    create_db_sql = '''
     DROP TABLE IF EXISTS airports CASCADE;
     CREATE TABLE airports (
         code VARCHAR(25) PRIMARY KEY,
@@ -118,17 +121,27 @@ def create_tables(cursor):
         elevation REAL,
         continent VARCHAR(2),
         location GEOGRAPHY(POINT)
-    );             
-    DROP TABLE IF EXISTS flights CASCADE;
-    CREATE TABLE flights (
+    );
+
+    DROP TABLE IF EXISTS imported_flights CASCADE;
+    CREATE TABLE imported_flights (
         id SERIAL PRIMARY KEY,
-        aircraft_uid VARCHAR(36),
         callsign VARCHAR(8),
-        typecode VARCHAR(25),
-        origin VARCHAR(25) REFERENCES airports(code),
-        destination VARCHAR(25) REFERENCES airports(code),
+        number VARCHAR(10),
+        icao24 VARCHAR(10),
+        registration VARCHAR(30),
+        typecode VARCHAR(50),
+        origin VARCHAR(25),
+        destination VARCHAR(25),
         firstseen TIMESTAMP,
-        lastseen TIMESTAMP
+        lastseen TIMESTAMP,
+        "day" DATE,
+        latitude_1 NUMERIC,
+        longitude_1 NUMERIC,
+        altitude_1 NUMERIC,
+        latitude_2 NUMERIC,
+        longitude_2 NUMERIC,
+        altitude_2 NUMERIC
     );
     DROP TABLE IF EXISTS regions CASCADE;
     CREATE TABLE regions (
@@ -148,19 +161,27 @@ def create_tables(cursor):
         date DATE,
         incidence REAL
     );
+    DROP TABLE IF EXISTS runtimes;
+    CREATE TABLE runtimes (
+        id SERIAL PRIMARY KEY,
+        service VARCHAR (50),
+        request VARCHAR(50),
+        runtime NUMERIC,
+        stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     '''
     cursor.execute(create_db_sql, [])
 
 
-def ingest(cursor, destinations):
-    ingest_airports(cursor, destinations['airports'])
+def ingest(cursor, destinations, conn):
+    #ingest_airports(cursor, destinations['airports'])
     print('Ingested airports')
     ingest_regions(cursor, destinations['regions'])
     print('Ingested regions')
+    #ingest_flights(cursor, destinations['flights'], conn)
+    print('Ingested flights')
     ingest_covid(cursor, destinations['covid'])
     print('Ingested covid cases')
-    ingest_flights(cursor, destinations['flights'])
-    print('Ingested flights')
 
 
 def ingest_airports(cursor, path):
@@ -181,7 +202,7 @@ def ingest_airports(cursor, path):
 def ingest_regions(cursor, path):
 
     sql = '''
-    INSERT INTO regions (id, level, geom, center_code, name, mount_type, urbn_type, coast_type) VALUES 
+    INSERT INTO regions (id, level, geom, center_code, name, mount_type, urbn_type, coast_type) VALUES
     (%s, %s, ST_Multi(ST_SetSRID(%s::geometry, 4326)), %s, %s, %s, %s, %s)
     '''
 
@@ -198,48 +219,37 @@ def ingest_regions(cursor, path):
 
 def ingest_covid(cursor, path):
     sql = '''
-        INSERT INTO covid_cases (region_id, incidence, date) VALUES
-        (%s, %s, TO_DATE(%s, 'YYYYMMDD'));
+        INSERT INTO covid_cases (region_id, incidence, date) 
+        VALUES (%s, %s, %s);
         '''
 
-    with open(path, 'r') as csvfile:
+    with codecs.open(path, 'r', encoding='ISO-8859-2') as csvfile:
         csvreader = csv.DictReader(csvfile)
         for line in csvreader:
-            insert = [line['nuts_code'], None, line['date']]
-            insert[1] = line['rate_14_day_per_100k'] if line['rate_14_day_per_100k'] else None
+            if re.match('[0-9]{4}-[0-9]{2}-[0-9]{2}', line['date']):
+                date = datetime.datetime.strptime(line['date'], '%Y-%m-%d').date()
+            else:
+                date = datetime.datetime.strptime(line['date'], '%Y%m%d').date()
+            insert = [line['nuts_code'], None, date]
+            insert[1] = line['rate_14_day_per_100k'] if line['rate_14_day_per_100k'] and line['rate_14_day_per_100k'] != 'NA' else None
             cursor.execute(sql, insert)
 
 
-def ingest_flights(cursor, path):
-
-    sql = '''
-            INSERT INTO flights (aircraft_uid, callsign, typecode, origin, destination, firstseen, lastseen) VALUES
-            (%s, %s, %s, %s, %s, TO_TIMESTAMP(%s, 'YYYY-MM-DD HH24:MI:SS+00:00'), 
-            TO_TIMESTAMP(%s, 'YYYY-MM-DD HH24:MI:SS+00:00'));
-            '''
-
-    foreign_key_exists_sql = '''
-        SELECT count(*) AS c FROM airports WHERE code=%s;
-    '''
-    filenames = os.listdir(path)
-    max_flights = 100000
-    flights = 0
+def ingest_flights(cursor, path, conn):
+    filenames = sorted(os.listdir(path))
     for filename in filenames:
-        with open(os.path.join(path, filename), 'r') as csvfile:
-            csvreader = csv.DictReader(csvfile)
-            for line in csvreader:
-                if line['origin'] and line['destination']:
-                    insert = [line['aircraft_uid'], line['callsign'], line['typecode'], line['origin'], line['destination'],
-                              line['firstseen'], line['lastseen']]
-                    cursor.execute(foreign_key_exists_sql, [line['origin']])
-                    origin_exists = cursor.fetchone()[0]
-                    cursor.execute(foreign_key_exists_sql, [line['destination']])
-                    destination_exists = cursor.fetchone()[0]
-                    if origin_exists and destination_exists:
-                        cursor.execute(sql, insert)
-                flights += 1
-                if flights >= max_flights:
-                    return
+        with open(os.path.join(path, filename), 'rb') as fd:
+            cursor.copy_expert('COPY imported_flights (callsign, number, icao24, registration, typecode, origin, destination, firstseen, lastseen, day, latitude_1, longitude_1, altitude_1, latitude_2, longitude_2, altitude_2) FROM stdin CSV HEADER DELIMITER AS \',\'', fd)
+        conn.commit()
+        print('Finished file {}'.format(filename))
+    sql = '''
+    create table flights as select id, callsign, number, registration, origin, destination, firstseen, lastseen from imported_flights tablesample bernoulli (10);
+    '''
+    cursor.execute(sql)
+    drop_sql = '''
+    DROP TABLE imported_flights
+    '''
+    cursor.execute(drop_sql)
 
 
 if __name__ == '__main__':
@@ -250,6 +260,10 @@ if __name__ == '__main__':
     connected = False
     while retries < max_retries and not connected:
         try:
+            conn = psycopg2.connect(user=os.environ['DB_USER'], password=os.environ['DB_PASS'], host=os.environ['DB_HOST'],
+                                    port=os.environ['DB_PORT'])
+            conn.set_session(autocommit=True)
+            create_database()
             conn = psycopg2.connect(user=os.environ['DB_USER'], password=os.environ['DB_PASS'], host=os.environ['DB_HOST'],
                                     port=os.environ['DB_PORT'], dbname=os.environ['DB_NAME'])
             connected = True
@@ -267,7 +281,7 @@ if __name__ == '__main__':
 
     paths = download_datasets()
 
-    ingest(cursor, paths)
+    ingest(cursor, paths, conn)
 
     conn.commit()
     conn.close()
