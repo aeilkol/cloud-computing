@@ -213,7 +213,7 @@ def serve():
         DataDeliveryService(conn), server
     )
 
-    server.add_insecure_port("[::]:50051")
+    server.add_insecure_port("[::]:{}".format(os.environ['OUT_PORT']))
     server.start()
     server.wait_for_termination()
 

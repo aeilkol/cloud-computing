@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+message RequestAnalysisRequest {
+  string service = 1;
+  string request = 2;
+  optional string start_time = 3;
+  optional string end_time = 4;
+}
+
+message RequestAnalysisResponse {
+  float average_runtime = 1;
+}
+
+service AdministratorAnalysis {
+  rpc RequestAnalysis (RequestAnalysisRequest) returns (RequestAnalysisResponse);
+}

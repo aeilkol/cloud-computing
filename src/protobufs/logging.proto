@@ -1,8 +1,16 @@
 syntax = "proto3";
 
+enum Level {
+  debug = 0;
+  info = 1;
+  warn = 2;
+  error = 3;
+}
+
 message LoggingRequest {
   string message = 1;
-  int32 level = 2;
+  Level level = 2;
+  string origin = 3;
 }
 
 message LoggingResponse {

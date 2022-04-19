@@ -4,10 +4,12 @@ import argparse
 from concurrent import futures
 from email import message
 import os
+import time
 
 import dotenv
 import grpc
 from google.protobuf.json_format import MessageToDict
+import psycopg2
 
 from grpc_interceptor import ExceptionToStatusInterceptor
 import data_analysis_pb2_grpc
@@ -23,8 +25,10 @@ from data_delivery_pb2 import (
 from logging_pb2_grpc import LoggingServiceStub
 from logging_pb2 import LoggingRequest
 
+from runtime_interceptor import RuntimeInterceptor
 
-class DataDeliveryService(data_analysis_pb2_grpc.DataAnalysisServicer):
+
+class DataAnalysisService(data_analysis_pb2_grpc.DataAnalysisServicer):
 
     def __init__(self):
         data_delivery_address = '{}:{}'.format(os.environ['DATA_DELIVERY_ADDRESS'], os.environ['DATA_DELIVERY_PORT'])
@@ -57,7 +61,8 @@ class DataDeliveryService(data_analysis_pb2_grpc.DataAnalysisServicer):
         flight_dict = {}
         for flight in flights_response.flights:
             flight_dict[flight.date] = flight.count
-        incidences = [incidence_dict['incidence'] for incidence_dict in MessageToDict(covid_case_response)['incidences'] if 'incidence' in incidence_dict]
+        incidences = [incidence_dict['incidence'] for incidence_dict in MessageToDict(covid_case_response)['incidences']
+                      if 'incidence' in incidence_dict]
         max_incidence = max(incidences)
         airport_analysis_objects = []
         year_delta = timedelta(days=365)
@@ -78,18 +83,32 @@ class DataDeliveryService(data_analysis_pb2_grpc.DataAnalysisServicer):
 
 
 def serve():
+    retries = 0
+    max_retries = 5
+    connected = False
+    while retries < max_retries and not connected:
+        try:
+            conn = psycopg2.connect(user=os.environ['DB_USER'], password=os.environ['DB_PASS'],
+                                    host=os.environ['DB_HOST'],
+                                    port=os.environ['DB_PORT'], dbname=os.environ['DB_NAME'])
+            connected = True
+        except psycopg2.OperationalError:
+            retries += 1
+            time.sleep(5)
+            if retries == max_retries:
+                raise EnvironmentError('Database connection failed')
 
-    interceptors = [ExceptionToStatusInterceptor()]
+    interceptors = [ExceptionToStatusInterceptor(), RuntimeInterceptor(conn)]
 
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10), interceptors=interceptors
     )
 
     data_analysis_pb2_grpc.add_DataAnalysisServicer_to_server(
-        DataDeliveryService(), server
+        DataAnalysisService(), server
     )
 
-    server.add_insecure_port("[::]:50052")
+    server.add_insecure_port("[::]:{}".format(os.environ['OUT_PORT']))
     server.start()
     server.wait_for_termination()
 

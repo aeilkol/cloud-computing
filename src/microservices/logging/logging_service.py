@@ -21,9 +21,9 @@ class LoggingService(logging_pb2_grpc.LoggingServiceServicer):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
-        formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(message)s')
+        formatter = logging.Formatter('%(levelname)s:%(asctime)s:%(origin)s:%(message)s')
 
-        file_handler = logging.FileHandler('test.log')
+        file_handler = logging.FileHandler('output.log')
         file_handler.setFormatter(formatter)
 
         self.logger.addHandler(file_handler)
@@ -31,7 +31,8 @@ class LoggingService(logging_pb2_grpc.LoggingServiceServicer):
     def Logging(self, request, context):
         message = request.message
         level = request.level
-        self.logger.log(logging.INFO, message)
+        origin = request.origin
+        self.logger.log(level, origin, message)
 
         return LoggingResponse(logged=True)
 
@@ -48,15 +49,15 @@ def serve():
         LoggingService(), server
     )
 
-    server.add_insecure_port("[::]:50053")
+    server.add_insecure_port("[::]:{}".format(os.environ['OUT_PORT']))
     server.start()
     server.wait_for_termination()
 
 
 if __name__ == '__main__':
-    # argparser = argparse.ArgumentParser()
-    # argparser.add_argument('--env', '-e')
-    # arguments = argparser.parse_args()
-    # env_path = arguments.env if arguments.env else '../.env'
-    # dotenv.load_dotenv(arguments.env)
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('--env', '-e')
+    arguments = argparser.parse_args()
+    env_path = arguments.env if arguments.env else '.env'
+    dotenv.load_dotenv(arguments.env)
     serve()
