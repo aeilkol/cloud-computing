@@ -113,7 +113,7 @@ def download_airport_data(path):
 def create_tables(cursor):
 
     create_db_sql = '''
-    DROP TABLE IF EXISTS airports CASCADE;
+    /*DROP TABLE IF EXISTS airports CASCADE;
     CREATE TABLE airports (
         code VARCHAR(25) PRIMARY KEY,
         name VARCHAR(128),
@@ -121,8 +121,9 @@ def create_tables(cursor):
         elevation REAL,
         continent VARCHAR(2),
         location GEOGRAPHY(POINT)
-    );
-
+    );*/
+    
+    DROP TABLE IF EXISTS flights;
     DROP TABLE IF EXISTS imported_flights CASCADE;
     CREATE TABLE imported_flights (
         id SERIAL PRIMARY KEY,
@@ -143,6 +144,7 @@ def create_tables(cursor):
         longitude_2 NUMERIC,
         altitude_2 NUMERIC
     );
+    /*
     DROP TABLE IF EXISTS regions CASCADE;
     CREATE TABLE regions (
         id VARCHAR(5) PRIMARY KEY,
@@ -154,13 +156,19 @@ def create_tables(cursor):
         urbn_type SMALLINT,
         coast_type SMALLINT
     );
+    
     DROP TABLE IF EXISTS covid_cases CASCADE;
-    CREATE TABLE covid_cases (
+    DROP TABLE IF EXISTS ingested_covid_cases CASCADE;
+    CREATE TABLE ingested_covid_cases (
         id SERIAL PRIMARY KEY,
-        region_id VARCHAR(5) REFERENCES regions(id),
-        date DATE,
-        incidence REAL
+        country VARCHAR(30),
+        region_name VARCHAR(255),
+        region_id VARCHAR(10),
+        date VARCHAR(8),
+        incidence REAL,
+        source VARCHAR(100)
     );
+    
     DROP TABLE IF EXISTS runtimes;
     CREATE TABLE runtimes (
         id SERIAL PRIMARY KEY,
@@ -168,7 +176,7 @@ def create_tables(cursor):
         request VARCHAR(50),
         runtime NUMERIC,
         stamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+    );*/
     '''
     cursor.execute(create_db_sql, [])
 
@@ -176,9 +184,9 @@ def create_tables(cursor):
 def ingest(cursor, destinations, conn):
     #ingest_airports(cursor, destinations['airports'])
     print('Ingested airports')
-    ingest_regions(cursor, destinations['regions'])
+    #ingest_regions(cursor, destinations['regions'])
     print('Ingested regions')
-    #ingest_flights(cursor, destinations['flights'], conn)
+    ingest_flights(cursor, destinations['flights'], conn)
     print('Ingested flights')
     ingest_covid(cursor, destinations['covid'])
     print('Ingested covid cases')
@@ -218,29 +226,36 @@ def ingest_regions(cursor, path):
 
 
 def ingest_covid(cursor, path):
-    sql = '''
-        INSERT INTO covid_cases (region_id, incidence, date) 
-        VALUES (%s, %s, %s);
-        '''
+    with open(os.path.join(path), 'rb') as fd:
+        cursor.copy_expert(
+            'COPY ingested_covid_cases (country, region_name, region_id, date, incidence, source) FROM stdin CSV HEADER DELIMITER AS \',\'',
+            fd)
 
-    with codecs.open(path, 'r', encoding='ISO-8859-2') as csvfile:
-        csvreader = csv.DictReader(csvfile)
-        for line in csvreader:
-            if re.match('[0-9]{4}-[0-9]{2}-[0-9]{2}', line['date']):
-                date = datetime.datetime.strptime(line['date'], '%Y-%m-%d').date()
-            else:
-                date = datetime.datetime.strptime(line['date'], '%Y%m%d').date()
-            insert = [line['nuts_code'], None, date]
-            insert[1] = line['rate_14_day_per_100k'] if line['rate_14_day_per_100k'] and line['rate_14_day_per_100k'] != 'NA' else None
-            cursor.execute(sql, insert)
+    sql = '''
+    CREATE TABLE covid_cases AS
+    SELECT id, region_id, TO_DATE(date, 'YYYYMMDD') AS date, incidence FROM ingested_covid_cases
+    '''
+
+    cursor.execute(sql)
+
+    sql = '''
+    DROP TABLE ingested_covid_cases
+    '''
+
+    cursor.execute(sql)
 
 
 def ingest_flights(cursor, path, conn):
     filenames = sorted(os.listdir(path))
     for filename in filenames:
-        with open(os.path.join(path, filename), 'rb') as fd:
-            cursor.copy_expert('COPY imported_flights (callsign, number, icao24, registration, typecode, origin, destination, firstseen, lastseen, day, latitude_1, longitude_1, altitude_1, latitude_2, longitude_2, altitude_2) FROM stdin CSV HEADER DELIMITER AS \',\'', fd)
-        conn.commit()
+        if filename.endswith('.gz'):
+            continue
+        try:
+            with open(os.path.join(path, filename), 'rb') as fd:
+                cursor.copy_expert('COPY imported_flights (callsign, number, icao24, registration, typecode, origin, destination, firstseen, lastseen, day, latitude_1, longitude_1, altitude_1, latitude_2, longitude_2, altitude_2) FROM stdin CSV HEADER DELIMITER AS \',\'', fd)
+            conn.commit()
+        except Exception as e:
+            print('Caught exception: {}'.format(e))
         print('Finished file {}'.format(filename))
     sql = '''
     create table flights as select id, callsign, number, registration, origin, destination, firstseen, lastseen from imported_flights tablesample bernoulli (10);
