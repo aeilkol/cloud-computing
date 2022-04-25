@@ -20,6 +20,7 @@ packaging==21.3
 protobuf==3.19.4
 pyparsing==3.0.7
 pyrsistent==0.18.1
+python-dotenv==0.20.0
 PyYAML==6.0
 requests==2.27.1
 six==1.16.0
