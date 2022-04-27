@@ -2,6 +2,7 @@ FROM python:3
 RUN ["mkdir", "/home/outbound"]
 WORKDIR /home/analysis
 
+COPY certs certs
 COPY outbound outbound
 COPY protobufs protobufs
 COPY openapi openapi

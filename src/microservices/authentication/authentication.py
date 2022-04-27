@@ -31,7 +31,7 @@ def serve():
         AuthenticationService(), server
     )
 
-    server.add_insecure_port("[::]:50055")
+    server.add_insecure_port("[::]:{}".format(os.environ['OUT_PORT']))
     server.start()
     server.wait_for_termination()
 

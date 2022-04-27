@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: outbound
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      type: outbound
+      app: outbound
+  template:
+    metadata:
+      labels:
+        type: outbound
+        app: outbound
+    spec:
+      containers:
+      - name: outbound
+        image: outbound
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: outbound-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: outbound-endpoint
+  namespace: default
+  labels:
+    type: outbound
+    app: outbound
+spec:
+  selector:
+    type: outbound
+    app: outbound
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: NodePort

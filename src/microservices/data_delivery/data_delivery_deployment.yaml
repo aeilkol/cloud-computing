@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-delivery
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      type: microservice
+      app: data-delivery
+  template:
+    metadata:
+      labels:
+        type: microservice
+        app: data-delivery
+    spec:
+      containers:
+      - name: data-delivery
+        image: data_delivery
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: data-delivery-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-delivery-endpoint
+  namespace: default
+  labels:
+    type: microservice
+    app: data-delivery
+spec:
+  selector:
+    type: microservice
+    app: data-delivery
+  ports:
+  - port: 50051
+    targetPort: 50051
+    protocol: TCP
+  type: NodePort

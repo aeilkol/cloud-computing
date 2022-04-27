@@ -2,3 +2,4 @@
 *_pb2_grpc.py
 microservices/**/runtime_interceptor.py
 microservices/logging/*.log
+certs

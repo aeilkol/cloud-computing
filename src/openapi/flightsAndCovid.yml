@@ -99,6 +99,24 @@ paths:
         "404":
           $ref: '#/components/responses/not_found'
 
+  /runtimes:
+    get:
+      tags:
+        - Runtimes
+      summary: Get the runtimes of the different RPC requests
+      description: Get the runtimes of the different RPC requests
+      operationId: endpoints.read_runtimes
+      parameters:
+        - $ref: '#/components/parameters/service'
+        - $ref: '#/components/parameters/request_type'
+        - $ref: '#/components/parameters/start_time'
+        - $ref: '#/components/parameters/end_time'
+      responses:
+        "200":
+          $ref: '#/components/responses/runtimes'
+        "404":
+          $ref: '#/components/responses/not_found'
+
 tags:
   - name: Airports And Flights
     description: "Get data from all the airports"
@@ -240,6 +258,43 @@ components:
       schema:
         type: boolean
 
+    service:
+      name: service
+      description: the name of a microservice
+      in: query
+      required: true
+      schema:
+        type: string
+        enum: [DataDelivery, DataAnalysis]
+
+    request_type:
+      name: request_type
+      description: the name of the request to a microservice
+      in: query
+      required: true
+      schema:
+        type: string
+        enum: ["AirportAnalysis", "Airports", "FlighsByDate", "AirportCovidCases", "CovidCases"]
+
+    start_time:
+      name: start_time
+      description: the lower bound of the start time of a process
+      in: query
+      required: false
+      schema:
+        type: string
+        format: datetime
+
+    end_time:
+      name: end_time
+      description: the upper bound of the end time of a process
+      in: query
+      required: false
+      schema:
+        type: string
+        format: datetime
+
+
   responses:
 
     airports:
@@ -278,6 +333,12 @@ components:
             items:
               $ref: '#/components/schemas/airport_statistic'
 
+    runtimes:
+      description: Average runtime of a certain RPC request
+      content:
+        application/json:
+          schema:
+            type: number
 
     not_found:
       description: Not found response

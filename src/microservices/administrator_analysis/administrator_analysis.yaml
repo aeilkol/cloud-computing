@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: administrator-analysis
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      type: microservice
+      app: administrator-analysis
+  template:
+    metadata:
+      labels:
+        type: microservice
+        app: administrator-analysis
+    spec:
+      containers:
+      - name: administrator-analysis
+        image: administrator_analysis
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: administrator-analysis-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: administrator-analysis-endpoint
+  namespace: default
+  labels:
+    type: microservice
+    app: administrator-analysis
+spec:
+  selector:
+    type: microservice
+    app: administrator-analysis
+  ports:
+  - port: 50055
+    targetPort: 50055
+    protocol: TCP
+  type: NodePort

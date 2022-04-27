@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-analysis
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      type: microservice
+      app: data-analysis
+  template:
+    metadata:
+      labels:
+        type: microservice
+        app: data-analysis
+    spec:
+      containers:
+      - name: data-analysis
+        image: data_analysis
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: data-analysis-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-analysis-endpoint
+  namespace: default
+  labels:
+    type: microservice
+    app: data-analysis
+spec:
+  selector:
+    type: microservice
+    app: data-analysis
+  ports:
+  - port: 50052
+    targetPort: 50052
+    protocol: TCP
+  type: NodePort

@@ -32,7 +32,7 @@ class AdministratorAnalysisDatabaseService():
 
     def get_average_runtime(self, service, request, start_time=None, end_time=None):
         sql = '''
-        SELECT AVERAGE(runtime) AS avg_runtime FROM runtimes
+        SELECT AVG(runtime) AS avg_runtime FROM runtimes
         WHERE service = %(service)s
         AND request = %(request)s
         AND (stamp >= TO_TIMESTAMP(%(start_time)s, 'YYYY-MM-DD HH24:MI:SS+00:00') OR %(start_time)s IS NULL)
