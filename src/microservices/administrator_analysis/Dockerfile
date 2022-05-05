@@ -1,5 +1,4 @@
 FROM python:3
-RUN ["mkdir", "/home/administrator_analysis"]
 WORKDIR /home/administrator_analysis
 
 COPY microservices/administrator_analysis microservices/administrator_analysis

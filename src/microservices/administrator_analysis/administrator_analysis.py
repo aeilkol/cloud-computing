@@ -22,7 +22,7 @@ class AdministratorAnalysisService(administrator_analysis_pb2_grpc.Administrator
     def RequestAnalysis(self, request, context):
         avg_runtime = self.database_service.get_average_runtime(request.service, request.request, request.start_time,
                                                                 request.end_time)
-        return RequestAnalysisResponse(average_runtime=avg_runtime)
+        return RequestAnalysisResponse(average_runtime=avg_runtime['avg_runtime'])
 
 
 class AdministratorAnalysisDatabaseService():

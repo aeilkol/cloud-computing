@@ -31,21 +31,26 @@ from runtime_interceptor import RuntimeInterceptor
 class DataAnalysisService(data_analysis_pb2_grpc.DataAnalysisServicer):
 
     def __init__(self):
-        data_delivery_address = '{}:{}'.format(os.environ['DATA_DELIVERY_ADDRESS'], os.environ['DATA_DELIVERY_PORT'])
+        data_delivery_host = os.environ['DATA_DELIVERY_ADDRESS'] if 'DATA_DELIVERY_ADDRESS' in os.environ else os.environ['DATA_DELIVERY_ENDPOINT_SERVICE_HOST']
+        data_delivery_port = os.environ['DATA_DELIVERY_PORT'] if 'DATA_DELIVERY_PORT' in os.environ else os.environ['DATA_DELIVERY_ENDPOINT_SERVICE_PORT']
+        data_delivery_address = '{}:{}'.format(data_delivery_host, data_delivery_port)
         data_delivery_channel = grpc.insecure_channel(data_delivery_address, options=(('grpc.enable_http_proxy', 0),))
         self.data_delivery_client = DataDeliveryStub(data_delivery_channel)
 
-        logging_address = '{}:{}'.format(os.environ['LOGGING_ADDRESS'], os.environ['LOGGING_PORT'])
-        logging_channel = grpc.insecure_channel(logging_address, options=(('grpc.enable_http_proxy', 0),))
-        self.logging_client = LoggingServiceStub(logging_channel)
+        # logging_address = '{}:{}'.format(os.environ['LOGGING_ADDRESS'], os.environ['LOGGING_PORT'])
+        # logging_channel = grpc.insecure_channel(logging_address, options=(('grpc.enable_http_proxy', 0),))
+        # self.logging_client = LoggingServiceStub(logging_channel)
 
 
     def AirportAnalysis(self, request, context):
-        log_request = LoggingRequest(
-            message='A call to AirportAnalysis was made',
-            level=20
-        )
-        self.logging_client.Logging(log_request)
+        # try:
+        #     log_request = LoggingRequest(
+        #         message='A call to AirportAnalysis was made',
+        #         level=20
+        #     )
+        #     self.logging_client.Logging(log_request)
+        # except:
+        #     print('Logging not available')
 
 
         flights_request = FlightsByDateRequest(

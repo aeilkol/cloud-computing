@@ -1,10 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+  DB_HOST: 34.76.79.112
+  DB_NAME: flights_covid
+  DB_PORT: "5432"
+  OUT_PORT: "50052"
+metadata:
+  name: data-delivery-config
+  namespace: default
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: data-delivery
   namespace: default
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       type: microservice
@@ -19,6 +30,19 @@ spec:
       - name: data-delivery
         image: data_delivery
         imagePullPolicy: IfNotPresent
+        env:
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: db-login
+                key: user
+                optional: false
+          - name: DB_PASS
+            valueFrom:
+              secretKeyRef:
+                name: db-login
+                key: pass
+                optional: false
         envFrom:
           - configMapRef:
               name: data-delivery-config

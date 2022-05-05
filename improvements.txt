@@ -1,0 +1,3 @@
+- optimize sql query performance
+- make more interesting data analysis (with spark?)
+-

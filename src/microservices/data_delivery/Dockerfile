@@ -1,6 +1,5 @@
 FROM python:3
-RUN ["mkdir", "/home/data_delivery"]
-WORKDIR /home/delivery
+WORKDIR /home/data_delivery
 
 COPY microservices/data_delivery microservices/data_delivery
 COPY protobufs protobufs

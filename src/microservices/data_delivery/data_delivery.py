@@ -197,6 +197,7 @@ def serve():
                                     host=os.environ['DB_HOST'],
                                     port=os.environ['DB_PORT'], dbname=os.environ['DB_NAME'])
             connected = True
+            print('Connected to database.')
         except psycopg2.OperationalError:
             retries += 1
             time.sleep(5)

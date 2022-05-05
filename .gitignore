@@ -5,3 +5,4 @@ database/ingest/datasets
 **/*_pb2_grpc.py
 **/.env
 **/*.log
+**/cluster.env

@@ -19,15 +19,33 @@ if os.environ.get('http_proxy'):
 
 dotenv.load_dotenv('.env')
 
-data_delivery_channel = grpc.insecure_channel('{}:{}'.format(os.environ['DATA_DELIVERY_ADDRESS'], os.environ['DATA_DELIVERY_PORT']),
-                                            options=(('grpc.enable_http_proxy', 0),))
+data_delivery_host = os.environ['DATA_DELIVERY_ADDRESS'] if 'DATA_DELIVERY_ADDRESS' in os.environ else os.environ[
+    'DATA_DELIVERY_ENDPOINT_SERVICE_HOST']
+data_delivery_port = os.environ['DATA_DELIVERY_PORT'] if 'DATA_DELIVERY_PORT' in os.environ else os.environ[
+    'DATA_DELIVERY_ENDPOINT_SERVICE_PORT']
+data_delivery_address = '{}:{}'.format(data_delivery_host, data_delivery_port)
+data_delivery_channel = grpc.insecure_channel(data_delivery_address, options=(('grpc.enable_http_proxy', 0),))
 data_delivery_client = DataDeliveryStub(data_delivery_channel)
-data_analysis_channel = grpc.insecure_channel('{}:{}'.format(os.environ['DATA_ANALYSIS_ADDRESS'], os.environ['DATA_ANALYSIS_PORT']),
-                                            options=(('grpc.enable_http_proxy', 0),))
+
+data_analysis_host = os.environ['DATA_ANALYSIS_ADDRESS'] if 'DATA_ANALYSIS_ADDRESS' in os.environ else os.environ[
+    'DATA_ANALYSIS_ENDPOINT_SERVICE_HOST']
+data_analysis_port = os.environ['DATA_ANALYSIS_PORT'] if 'DATA_ANALYSIS_PORT' in os.environ else os.environ[
+    'DATA_ANALYSIS_ENDPOINT_SERVICE_PORT']
+data_analysis_address = '{}:{}'.format(data_analysis_host, data_analysis_port)
+data_analysis_channel = grpc.insecure_channel(data_analysis_address, options=(('grpc.enable_http_proxy', 0),))
 data_analysis_client = DataAnalysisStub(data_analysis_channel)
-administrator_analysis_channel = grpc.insecure_channel('{}:{}'.format(os.environ['ADMINISTRATOR_ANALYSIS_ADDRESS'], os.environ['ADMINISTRATOR_ANALYSIS_PORT']),
-                                                     options=(('grpc.enable_http_proxy', 0),))
+
+administrator_analysis_host = os.environ['ADMINISTRATOR_ANALYSIS_ADDRESS'] if 'ADMINISTRATOR_ANALYSIS_ADDRESS' in os.environ else os.environ[
+    'ADMINISTRATOR_ANALYSIS_ENDPOINT_SERVICE_HOST']
+administrator_analysis_port = os.environ['ADMINISTRATOR_ANALYSIS_PORT'] if 'ADMINISTRATOR_ANALYSIS_PORT' in os.environ else os.environ[
+    'ADMINISTRATOR_ANALYSIS_ENDPOINT_SERVICE_PORT']
+administrator_analysis_address = '{}:{}'.format(administrator_analysis_host, administrator_analysis_port)
+administrator_analysis_channel = grpc.insecure_channel(administrator_analysis_address, options=(('grpc.enable_http_proxy', 0),))
 administrator_analysis_client = AdministratorAnalysisStub(administrator_analysis_channel)
+
+if 'DATA_DELIVERY_ADDRESS' in os.environ:
+    print(os.environ['DATA_DELIVERY_ADDRESS'])
+print('Adresses: (Data Delivery {}, Data Analysis {}, Admin Analysis {}'.format(data_delivery_address, data_analysis_address, administrator_analysis_address))
 
 def read_all_airports(continent, airport_type=1):
     request = AirportRequest(
