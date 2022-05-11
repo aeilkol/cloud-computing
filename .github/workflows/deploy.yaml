@@ -22,7 +22,7 @@ env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GAR_LOCATION: europe-west1 # TODO: update region of the Artifact Registry
   GKE_CLUSTER: cloud-computing-cluster    # TODO: update to cluster name
-  GKE_ZONE: eruope-west1-c   # TODO: update to cluster zone
+  GKE_ZONE: europe-west1-c   # TODO: update to cluster zone
   DEPLOYMENT_NAME: cloud-computing-project # TODO: update to deployment name
   REPOSITORY: cloud-computing-repo # TODO: update to Artifact Registry docker repository
   IMAGE: static-site
