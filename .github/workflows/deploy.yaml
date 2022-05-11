@@ -48,6 +48,12 @@ jobs:
       with:
         credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
 
+    - name: Test authentication
+      run: |-
+        echo ${{steps}}
+        echo ${{steps.auth}}
+        echo ${{steps.auth.outputs}}
+
     - name: Docker configuration
       run: |-
         echo ${{steps.auth.outputs.access_token}} | docker login -u oauth2accesstoken --password-stdin https://$GAR_LOCATION-docker.pkg.dev
