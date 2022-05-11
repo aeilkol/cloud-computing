@@ -18,46 +18,64 @@ on:
       - main
       - aeilko
 
+# Environment variables available to all jobs and steps in this workflow
+#  GKE_EMAIL: ${{ secrets.GKE_EMAIL }}
+#  GKE_KEY: ${{ secrets.GKE_KEY }}
 env:
-  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GAR_LOCATION: europe-west1 # TODO: update region of the Artifact Registry
-  GKE_CLUSTER: cloud-computing-cluster    # TODO: update to cluster name
-  GKE_ZONE: europe-west1   # TODO: update to cluster zone
-  DEPLOYMENT_NAME: cloud-computing-project # TODO: update to deployment name
-  REPOSITORY: cloud-computing-repo # TODO: update to Artifact Registry docker repository
+  GITHUB_SHA: ${{ github.sha }}
+  GITHUB_REF: ${{ github.ref }}
   IMAGE: outbound
+  REGISTRY_HOSTNAME: eu.gcr.io
+
 
 jobs:
-
-  build:
-
+  setup-build-publish-deploy:
+    name: Setup, Build, and Publish
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v2
 
-    - name: Build and push Docker images
-      uses: docker/build-push-action@v1.1.0
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    # Setup gcloud CLI
+    - uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
       with:
-        # Username used to log in to a Docker registry. If not set then no login will occur
-        username: _json_key
-        # Password or personal access token used to log in to a Docker registry. If not set then no login will occur
-        password: ${{ secrets.GCLOUD_SERVICE_KEY }}
-        # Server address of Docker registry. If not set then will default to Docker Hub
-        registry: eu.gcr.io
-        # Docker repository to tag the image with
-        repository: ${{ secrets.GKE_PROJECT }}/outbound
-        # Comma-delimited list of tags. These will be added to the registry/repository to form the image's tags
-        tags: latest
-        # Automatically tags the built image with the git reference as per the readme
-        tag_with_ref: true
-        # Automatically tags the built image with the git short SHA as per the readme
-        tag_with_sha: true
-        # Comma-delimited list of labels to add to the built image
-        labels: github-action-build
-        # Whether to push the image
-        push: true
+        version: '270.0.0'
+        service_account_key: ${{ secrets.GCLOUD_SERVICE_KEY }}
 
+    # Configure docker to use the gcloud command-line tool as a credential helper
+    - run: |
+        # Set up docker to authenticate
+        # via gcloud command-line tool.
+        gcloud auth configure-docker
+
+    # Build the Docker image
+    - name: Build
+      run: |
+        export TAG=`echo $GITHUB_REF | awk -F/ '{print $NF}'`
+        echo $TAG
+        docker build -t "$REGISTRY_HOSTNAME"/"$IMAGE":"$TAG" \
+          --build-arg GITHUB_SHA="$GITHUB_SHA" \
+          --build-arg GITHUB_REF="$GITHUB_REF" .
+
+    # Push the Docker image to Google Container Registry
+    - name: Publish
+      run: |
+        export TAG=`echo $GITHUB_REF | awk -F/ '{print $NF}'`
+        echo $TAG
+        docker push "$REGISTRY_HOSTNAME"/"$IMAGE":"$TAG"
+        docker tag "$REGISTRY_HOSTNAME"/"$IMAGE":"$TAG" "$REGISTRY_HOSTNAME"/"$IMAGE":latest
+        docker push "$REGISTRY_HOSTNAME"/"$IMAGE":latest
+
+#env:
+#  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+#  GAR_LOCATION: europe-west1 # TODO: update region of the Artifact Registry
+#  GKE_CLUSTER: cloud-computing-cluster    # TODO: update to cluster name
+#  GKE_ZONE: europe-west1   # TODO: update to cluster zone
+#  DEPLOYMENT_NAME: cloud-computing-project # TODO: update to deployment name
+#  REPOSITORY: cloud-computing-repo # TODO: update to Artifact Registry docker repository
+#  IMAGE: outbound
+#
 #jobs:
 #  setup-build-publish-deploy:
 #    name: Setup, Build, Publish, and Deploy
