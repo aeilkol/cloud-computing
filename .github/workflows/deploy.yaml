@@ -41,20 +41,11 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
-    # Configure Workload Identity Federation and generate an access token.
-    - id: 'auth'
-      name: 'Authenticate to Google Cloud'
-      uses: 'google-github-actions/auth@v0'
-      with:
-        token_format: 'access_token'
-        workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
-        service_account: 'aeilko-luebsen@cloud-computing-347913.iam.gserviceaccount.com'
-
-    # Alternative option - authentication via credentials json
-    # - id: 'auth'
-    #   uses: 'google-github-actions/auth@v0'
-    #   with:
-    #     credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+     Alternative option - authentication via credentials json
+     - id: 'auth'
+       uses: 'google-github-actions/auth@v0'
+       with:
+         credentials_json: '${{ secrets.GCLOUD_SERVICE_KEY }}'
 
     - name: Docker configuration
       run: |-
