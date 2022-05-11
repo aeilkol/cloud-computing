@@ -50,9 +50,9 @@ jobs:
 
     - name: Test authentication
       run: |-
-        echo ${{steps.toJSON()}}
-        echo ${{steps.auth.toJSON()}}
-        echo ${{steps.auth.outputs.toJSON()}}
+        echo ${{toJSON(steps)}}
+        echo ${{toJSON(steps.auth)}}
+        echo ${{toJSON(steps.auth.outputs)}}
 
     - name: Docker configuration
       run: |-
