@@ -25,7 +25,7 @@ env:
   GKE_ZONE: europe-west1   # TODO: update to cluster zone
   DEPLOYMENT_NAME: cloud-computing-project # TODO: update to deployment name
   REPOSITORY: cloud-computing-repo # TODO: update to Artifact Registry docker repository
-  IMAGE: static-site
+  IMAGE: outbound
 
 jobs:
   setup-build-publish-deploy:
