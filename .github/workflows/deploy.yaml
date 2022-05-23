@@ -74,7 +74,7 @@ env:
   GKE_ZONE: europe-west1   # TODO: update to cluster zone
   DEPLOYMENT_NAME: cloud-computing-project # TODO: update to deployment name
   REPOSITORY: cloud-computing-repo # TODO: update to Artifact Registry docker repository
-  IMAGE: outbound
+  IMAGE: data-analysis
 
 jobs:
   setup-build-publish-deploy:
@@ -117,7 +117,7 @@ jobs:
           --tag "$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA" \
           --build-arg GITHUB_SHA="$GITHUB_SHA" \
           --build-arg GITHUB_REF="$GITHUB_REF" \
-          --file=outbound/Dockerfile \
+          --file=micoservices/data_analysis/Dockerfile \
           .
 
     # Push the Docker image to Google Artifact Registry
