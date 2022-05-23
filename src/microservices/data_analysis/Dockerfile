@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.9
 WORKDIR /home/data_analysis
 
 COPY microservices/data_analysis microservices/data_analysis
