@@ -1,4 +1,3 @@
-from datetime import timedelta
 import datetime
 import argparse
 from concurrent import futures
@@ -70,10 +69,9 @@ class DataAnalysisService(data_analysis_pb2_grpc.DataAnalysisServicer):
                       if 'incidence' in incidence_dict]
         max_incidence = max(incidences)
         airport_analysis_objects = []
-        year_delta = timedelta(days=365)
         for incidence in covid_case_response.incidences:
             covid_date = datetime.datetime.strptime(incidence.date, '%Y-%m-%d').date()
-            year_before = covid_date - year_delta
+            year_before = self.__subtract_years(covid_date, 1)
             year_before_str = year_before.strftime('%Y-%m-%d')
             if year_before_str not in flight_dict or incidence.date not in flight_dict:
                 continue
@@ -86,6 +84,13 @@ class DataAnalysisService(data_analysis_pb2_grpc.DataAnalysisServicer):
                                                                 covid_flight_factor=covid_flight_factor))
         return AirportAnalysisResponse(analysis=airport_analysis_objects)
 
+    @staticmethod
+    def __subtract_years(dt, years):
+        try:
+            dt = dt.replace(year=dt.year - years)
+        except ValueError:
+            dt = dt.replace(year=dt.year - years, day=dt.day - 1)
+        return dt
 
 def serve():
     retries = 0
