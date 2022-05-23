@@ -1,0 +1,23 @@
+\documentclass[12pt]{article}
+
+\usepackage[paper=a4paper,left=25mm,right=25mm,top=25mm,bottom=25mm]{geometry}
+\usepackage{url}
+\usepackage{notoccite}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{verbatim}
+\graphicspath{ {images/} }
+
+%opening
+\title{Cloud Computing Project - Analyzing the connection between flights and cases of Covid-19 in Europe: Revision}
+\author{Aeilko Lübsen}
+
+\begin{document}
+	\maketitle
+	
+	In the revision of my Cloud Computing project, I want to work mostly on testing, logging and error-handling in my application. For testing, I want to implement the service component test pattern, so I will be testing each microservice in isolation. To do that, I will mock each microservice when it is depended on, run the microservice that is to be tested in another thread and call its RPCs. This will probably also require some refactoring of the microservices themselves. Next, I want to finally implement the log aggregation pattern already proposed in Phase 2 of the project, meaning there will be an additional microservices with a single RPC in its interface that the logs from all the other microservices will be sent to and stored in. Lastly, on top of this, I want to implement proper error handling and tracing, so it is easier to identify where errors originate in the application.
+	
+	These changes will not add any use cases to the application, but they will improve its reliability and maintainability. The architecture itself will not change apart from the logging microservice that is being added.
+	
+	
+\end{document}
