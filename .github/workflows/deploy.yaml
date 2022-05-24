@@ -83,7 +83,7 @@ jobs:
     environment: production
 
     permissions:
-      contents: 'read'
+      contents: 'write'
       id-token: 'write'
 
     steps:
@@ -112,6 +112,7 @@ jobs:
     # Build the Docker image
     - name: Build
       run: |-
+        gcloud auth list
         cd src
         docker build \
           --tag "$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$IMAGE:$GITHUB_SHA" \
