@@ -9,11 +9,13 @@ How to get database running and ingest data:
 
 How to run actual code:
 
-1. In every microservice folder run `sh build_protobufs.sh`
-2. Create `.env`-file in every microservice and the outbound folder according to `example.env`
-3. Install all the requirements to your python environment with `python3 -m pip install -r requirements.txt` in every microservice/outbound folder.
-4. Copy file `runtime_interceptor.py` to `data_analysis` and `data_delivery` folders.
+1. In `src` folder, run `sh scripts/build_all_protobufs.sh`
+2. In `src` folder, run `sh scripts/copy_redirect_output.sh`
+3. Create `.env`-file in every microservice and the outbound folder according to `example.env`
+4. Install all the requirements to your python environment with `python3 -m pip install -r requirements.txt` in every microservice/outbound folder.
+5. Copy file `runtime_interceptor.py` to `data_analysis` and `data_delivery` folders.
+6. Run all service files in the microservices folder.
 
 How to then run the containers:
-1. In `src` folder run all the docker build commands commented into the `docker_run_{script name}.sh` files.
+1. In `src` folder, run `sh scripts/setup.sh`.
 2. Run all the `docker_run_{script name}.sh` scripts.
