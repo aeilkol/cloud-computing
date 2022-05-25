@@ -1,7 +1,11 @@
 import os
+import sys
+import time
 
 import grpc
 import dotenv
+
+from google.protobuf.json_format import MessageToDict
 
 from data_delivery_pb2 import AirportRequest, CovidCaseRequest, FlightRequest, AirportCovidCaseRequest
 from data_delivery_pb2_grpc import DataDeliveryStub
@@ -9,8 +13,9 @@ from data_analysis_pb2 import AirportAnalysisRequest
 from data_analysis_pb2_grpc import DataAnalysisStub
 from administrator_analysis_pb2 import RequestAnalysisRequest
 from administrator_analysis_pb2_grpc import AdministratorAnalysisStub
+from logging_pb2_grpc import LoggingServiceStub
 
-from google.protobuf.json_format import MessageToDict
+from redirect_output import LoggingRedirector
 
 if os.environ.get('https_proxy'):
     del os.environ['https_proxy']
@@ -43,8 +48,33 @@ administrator_analysis_address = '{}:{}'.format(administrator_analysis_host, adm
 administrator_analysis_channel = grpc.insecure_channel(administrator_analysis_address, options=(('grpc.enable_http_proxy', 0),))
 administrator_analysis_client = AdministratorAnalysisStub(administrator_analysis_channel)
 
-if 'DATA_DELIVERY_ADDRESS' in os.environ:
-    print(os.environ['DATA_DELIVERY_ADDRESS'])
+logging_host = os.environ['LOGGING_ADDRESS'] if 'LOGGING_ADDRESS' in os.environ else os.environ[
+    'LOGGING_ENDPOINT_SERVICE_HOST']
+logging_port = os.environ['LOGGING_PORT'] if 'LOGGING_PORT' in os.environ else os.environ[
+    'LOGGING_ENDPOINT_SERVICE_PORT']
+logging_address = '{}:{}'.format(logging_host, logging_port)
+logging_channel = grpc.insecure_channel(logging_address, options=(('grpc.enable_http_proxy', 0),))
+logging_client = LoggingServiceStub(logging_channel)
+
+stdout_redirector = LoggingRedirector(logging_client, 'outbound', True)
+stderr_redirector = LoggingRedirector(logging_client, 'outbound', False)
+
+retries = 0
+max_retries = 5
+connected = False
+while retries < max_retries and not connected:
+    try:
+        stdout_redirector.write('Service started.')
+        sys.stdout = stdout_redirector
+        sys.stderr = stderr_redirector
+        connected = True
+    except Exception as e:
+        retries += 1
+        time.sleep(5)
+        print(e)
+if not connected:
+    print('Logging service not available, will use console instead.')
+
 print('Adresses: (Data Delivery {}, Data Analysis {}, Admin Analysis {}'.format(data_delivery_address, data_analysis_address, administrator_analysis_address))
 
 def read_all_airports(continent, airport_type=1):

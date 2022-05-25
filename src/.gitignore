@@ -1,5 +1,7 @@
 *_pb2.py
 *_pb2_grpc.py
 microservices/**/runtime_interceptor.py
-microservices/logging/*.log
+microservice/**/redirect_output.py
+outbound/redirect_output.py
+**/*.log
 certs

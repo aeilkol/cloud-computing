@@ -1,7 +1,7 @@
 import datetime
 import argparse
 from concurrent import futures
-from email import message
+import sys
 import os
 import time
 
@@ -21,8 +21,9 @@ from data_delivery_pb2 import (
     AirportCovidCaseRequest,
     FlightsByDateRequest
 )
+
 from logging_pb2_grpc import LoggingServiceStub
-from logging_pb2 import LoggingRequest
+from redirect_output import LoggingRedirector
 
 from runtime_interceptor import RuntimeInterceptor
 
@@ -93,6 +94,34 @@ class DataAnalysisService(data_analysis_pb2_grpc.DataAnalysisServicer):
         return dt
 
 def serve():
+
+    logging_host = os.environ['LOGGING_ADDRESS'] if 'LOGGING_ADDRESS' in os.environ else os.environ[
+        'LOGGING_ENDPOINT_SERVICE_HOST']
+    logging_port = os.environ['LOGGING_PORT'] if 'LOGGING_PORT' in os.environ else os.environ[
+        'LOGGING_ENDPOINT_SERVICE_PORT']
+    logging_address = '{}:{}'.format(logging_host, logging_port)
+    logging_channel = grpc.insecure_channel(logging_address, options=(('grpc.enable_http_proxy', 0),))
+    logging_client = LoggingServiceStub(logging_channel)
+
+    stdout_redirector = LoggingRedirector(logging_client, 'data_analysis', True)
+    stderr_redirector = LoggingRedirector(logging_client, 'data_analysis', False)
+
+    retries = 0
+    max_retries = 5
+    connected = False
+    while retries < max_retries and not connected:
+        try:
+            stdout_redirector.write('Service started.')
+            sys.stdout = stdout_redirector
+            sys.stderr = stderr_redirector
+            connected = True
+        except Exception as e:
+            retries += 1
+            time.sleep(5)
+            print(e)
+    if not connected:
+        print('Logging service not available, will use console instead.')
+
     retries = 0
     max_retries = 5
     connected = False
