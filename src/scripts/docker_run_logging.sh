@@ -1,3 +1,3 @@
 #!/bin/sh
 
-docker run --network="host" logging
+docker run --env-file microservices/logging/.env --network="host" logging

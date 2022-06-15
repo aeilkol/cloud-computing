@@ -4,7 +4,7 @@ data:
   DB_HOST: 34.76.79.112
   DB_NAME: flights_covid
   DB_PORT: "5432"
-  OUT_PORT: "50052"
+  OUT_PORT: "30051"
 metadata:
   name: data-delivery-config
   namespace: default
@@ -61,7 +61,8 @@ spec:
     type: microservice
     app: data-delivery
   ports:
-  - port: 50051
-    targetPort: 50051
+  - port: 30051
+    targetPort: 30051
+    nodePort: 30051
     protocol: TCP
   type: NodePort

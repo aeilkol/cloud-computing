@@ -37,21 +37,8 @@ class DataAnalysisService(data_analysis_pb2_grpc.DataAnalysisServicer):
         data_delivery_channel = grpc.insecure_channel(data_delivery_address, options=(('grpc.enable_http_proxy', 0),))
         self.data_delivery_client = DataDeliveryStub(data_delivery_channel)
 
-        # logging_address = '{}:{}'.format(os.environ['LOGGING_ADDRESS'], os.environ['LOGGING_PORT'])
-        # logging_channel = grpc.insecure_channel(logging_address, options=(('grpc.enable_http_proxy', 0),))
-        # self.logging_client = LoggingServiceStub(logging_channel)
-
 
     def AirportAnalysis(self, request, context):
-        # try:
-        #     log_request = LoggingRequest(
-        #         message='A call to AirportAnalysis was made',
-        #         level=20
-        #     )
-        #     self.logging_client.Logging(log_request)
-        # except:
-        #     print('Logging not available')
-
 
         flights_request = FlightsByDateRequest(
             airport_code=request.airport_code,
@@ -121,6 +108,8 @@ def serve():
             print(e)
     if not connected:
         print('Logging service not available, will use console instead.')
+    else:
+        print('Logging service connected.')
 
     retries = 0
     max_retries = 5

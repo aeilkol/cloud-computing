@@ -4,31 +4,32 @@ data:
   DB_HOST: 34.76.79.112
   DB_NAME: flights_covid
   DB_PORT: "5432"
-  OUT_PORT: "30052"
+  OUT_PORT: "30054"
 metadata:
-  name: data-analysis-config
+  name: logging-config
   namespace: default
+
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: data-analysis
+  name: logging
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
       type: microservice
-      app: data-analysis
+      app: logging
   template:
     metadata:
       labels:
         type: microservice
-        app: data-analysis
+        app: logging
     spec:
       containers:
-      - name: data-analysis
-        image: data_analysis
+      - name: logging
+        image: logging
         imagePullPolicy: IfNotPresent
         env:
           - name: DB_USER
@@ -45,23 +46,24 @@ spec:
                 optional: false
         envFrom:
           - configMapRef:
-              name: data-analysis-config
+              name: logging-config
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: data-analysis-endpoint
+  name: logging-endpoint
   namespace: default
   labels:
     type: microservice
-    app: data-analysis
+    app: logging
 spec:
   selector:
     type: microservice
-    app: data-analysis
+    app: logging
   ports:
-  - port: 30052
-    targetPort: 30052
+  - port: 30054
+    targetPort: 30054
+    nodePort: 30054
     protocol: TCP
   type: NodePort

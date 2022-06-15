@@ -69,8 +69,8 @@ paths:
     get:
       tags:
       - Airports And Flights
-      summary: Get some statistics on covid and flights on a certain date
-      description: Get some statistics on covid and flights on a certain date
+      summary: Get some statistics on covid and flights in a certain airport
+      description: Get some statistics on covid and flights in a certain airport
       operationId: endpoints.read_statistics
       parameters:
         - $ref: '#/components/parameters/airport_code'

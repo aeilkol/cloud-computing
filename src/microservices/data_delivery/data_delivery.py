@@ -218,6 +218,8 @@ def serve():
             print(e)
     if not connected:
         print('Logging service not available, will use console instead.')
+    else:
+        print('Logging service connected.')
 
     retries = 0
     max_retries = 5
