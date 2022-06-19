@@ -190,13 +190,8 @@ class DataDeliveryDatabaseService():
         return cursor.fetchall()
 
 
-def serve():
+def serve(logging_address):
 
-    logging_host = os.environ['LOGGING_ADDRESS'] if 'LOGGING_ADDRESS' in os.environ else os.environ[
-        'LOGGING_ENDPOINT_SERVICE_HOST']
-    logging_port = os.environ['LOGGING_PORT'] if 'LOGGING_PORT' in os.environ else os.environ[
-        'LOGGING_ENDPOINT_SERVICE_PORT']
-    logging_address = '{}:{}'.format(logging_host, logging_port)
     logging_channel = grpc.insecure_channel(logging_address, options=(('grpc.enable_http_proxy', 0),))
     logging_client = LoggingServiceStub(logging_channel)
 
@@ -258,4 +253,14 @@ if __name__ == '__main__':
     arguments = argparser.parse_args()
     env_path = arguments.env if arguments.env else '.env'
     dotenv.load_dotenv(arguments.env)
-    serve()
+
+    if 'KUBERNETES_SERVICE_HOST' in os.environ:
+        logging_host = os.environ['LOGGING_ENDPOINT_SERVICE_HOST']
+        logging_port = os.environ['LOGGING_ENDPOINT_SERVICE_PORT']
+    else:
+        dotenv.load_dotenv(arguments.env)
+        logging_host = os.environ['LOGGING_ADDRESS']
+        logging_port = os.environ['LOGGING_PORT']
+    logging_address = '{}:{}'.format(logging_host, logging_port)
+
+    serve(logging_address)

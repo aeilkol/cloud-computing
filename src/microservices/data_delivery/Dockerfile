@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.8
 WORKDIR /home/data_delivery
 
 COPY microservices/data_delivery microservices/data_delivery

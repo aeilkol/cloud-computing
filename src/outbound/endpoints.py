@@ -19,39 +19,40 @@ from redirect_output import LoggingRedirector
 
 if os.environ.get('https_proxy'):
     del os.environ['https_proxy']
-if os.environ.get('http_proxy'):
-    del os.environ['http_proxy']
 
-dotenv.load_dotenv('.env')
+if 'KUBERNETES_SERVICE_HOST' in os.environ:
+    data_delivery_host = os.environ['DATA_DELIVERY_ENDPOINT_SERVICE_HOST']
+    data_delivery_port = os.environ['DATA_DELIVERY_ENDPOINT_SERVICE_PORT']
+    data_analysis_host = os.environ['DATA_ANALYSIS_ENDPOINT_SERVICE_HOST']
+    data_analysis_port = os.environ['DATA_ANALYSIS_ENDPOINT_SERVICE_PORT']
+    administrator_analysis_host = os.environ['ADMINISTRATOR_ANALYSIS_ENDPOINT_SERVICE_HOST']
+    administrator_analysis_port = os.environ['ADMINISTRATOR_ANALYSIS_ENDPOINT_SERVICE_PORT']
+    logging_host = os.environ['LOGGING_ENDPOINT_SERVICE_HOST']
+    logging_port = os.environ['LOGGING_ENDPOINT_SERVICE_PORT']
+else:
+    dotenv.load_dotenv('.env')
 
-data_delivery_host = os.environ['DATA_DELIVERY_ADDRESS'] if 'DATA_DELIVERY_ADDRESS' in os.environ else os.environ[
-    'DATA_DELIVERY_ENDPOINT_SERVICE_HOST']
-data_delivery_port = os.environ['DATA_DELIVERY_PORT'] if 'DATA_DELIVERY_PORT' in os.environ else os.environ[
-    'DATA_DELIVERY_ENDPOINT_SERVICE_PORT']
+    data_delivery_host = os.environ['DATA_DELIVERY_ADDRESS']
+    data_delivery_port = os.environ['DATA_DELIVERY_PORT']
+    data_analysis_host = os.environ['DATA_ANALYSIS_ADDRESS']
+    data_analysis_port = os.environ['DATA_ANALYSIS_PORT']
+    administrator_analysis_host = os.environ['ADMINISTRATOR_ANALYSIS_ADDRESS']
+    administrator_analysis_port = os.environ['ADMINISTRATOR_ANALYSIS_PORT']
+    logging_host = os.environ['LOGGING_ADDRESS']
+    logging_port = os.environ['LOGGING_PORT']
+
 data_delivery_address = '{}:{}'.format(data_delivery_host, data_delivery_port)
 data_delivery_channel = grpc.insecure_channel(data_delivery_address, options=(('grpc.enable_http_proxy', 0),))
 data_delivery_client = DataDeliveryStub(data_delivery_channel)
 
-data_analysis_host = os.environ['DATA_ANALYSIS_ADDRESS'] if 'DATA_ANALYSIS_ADDRESS' in os.environ else os.environ[
-    'DATA_ANALYSIS_ENDPOINT_SERVICE_HOST']
-data_analysis_port = os.environ['DATA_ANALYSIS_PORT'] if 'DATA_ANALYSIS_PORT' in os.environ else os.environ[
-    'DATA_ANALYSIS_ENDPOINT_SERVICE_PORT']
 data_analysis_address = '{}:{}'.format(data_analysis_host, data_analysis_port)
 data_analysis_channel = grpc.insecure_channel(data_analysis_address, options=(('grpc.enable_http_proxy', 0),))
 data_analysis_client = DataAnalysisStub(data_analysis_channel)
 
-administrator_analysis_host = os.environ['ADMINISTRATOR_ANALYSIS_ADDRESS'] if 'ADMINISTRATOR_ANALYSIS_ADDRESS' in os.environ else os.environ[
-    'ADMINISTRATOR_ANALYSIS_ENDPOINT_SERVICE_HOST']
-administrator_analysis_port = os.environ['ADMINISTRATOR_ANALYSIS_PORT'] if 'ADMINISTRATOR_ANALYSIS_PORT' in os.environ else os.environ[
-    'ADMINISTRATOR_ANALYSIS_ENDPOINT_SERVICE_PORT']
 administrator_analysis_address = '{}:{}'.format(administrator_analysis_host, administrator_analysis_port)
 administrator_analysis_channel = grpc.insecure_channel(administrator_analysis_address, options=(('grpc.enable_http_proxy', 0),))
 administrator_analysis_client = AdministratorAnalysisStub(administrator_analysis_channel)
 
-logging_host = os.environ['LOGGING_ADDRESS'] if 'LOGGING_ADDRESS' in os.environ else os.environ[
-    'LOGGING_ENDPOINT_SERVICE_HOST']
-logging_port = os.environ['LOGGING_PORT'] if 'LOGGING_PORT' in os.environ else os.environ[
-    'LOGGING_ENDPOINT_SERVICE_PORT']
 logging_address = '{}:{}'.format(logging_host, logging_port)
 logging_channel = grpc.insecure_channel(logging_address, options=(('grpc.enable_http_proxy', 0),))
 logging_client = LoggingServiceStub(logging_channel)

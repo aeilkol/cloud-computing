@@ -4,32 +4,31 @@ data:
   DB_HOST: 34.76.79.112
   DB_NAME: flights_covid
   DB_PORT: "5432"
-  OUT_PORT: "30054"
+  OUT_PORT: "30051"
 metadata:
-  name: logging-config
+  name: data-delivery-config
   namespace: default
-
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: logging
+  name: data-delivery
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
       type: microservice
-      app: logging
+      app: data-delivery
   template:
     metadata:
       labels:
         type: microservice
-        app: logging
+        app: data-delivery
     spec:
       containers:
-      - name: logging
-        image: logging
+      - name: data-delivery
+        image: data_delivery
         imagePullPolicy: IfNotPresent
         env:
           - name: DB_USER
@@ -46,24 +45,22 @@ spec:
                 optional: false
         envFrom:
           - configMapRef:
-              name: logging-config
+              name: data-delivery-config
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: logging-endpoint
+  name: data-delivery-endpoint
   namespace: default
   labels:
     type: microservice
-    app: logging
+    app: data-delivery
 spec:
   selector:
     type: microservice
-    app: logging
+    app: data-delivery
   ports:
-  - port: 30054
-    targetPort: 30054
-    nodePort: 30054
+  - port: 30051
     protocol: TCP
-  type: NodePort
+  type: ClusterIP

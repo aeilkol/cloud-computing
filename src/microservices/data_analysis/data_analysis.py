@@ -30,10 +30,7 @@ from runtime_interceptor import RuntimeInterceptor
 
 class DataAnalysisService(data_analysis_pb2_grpc.DataAnalysisServicer):
 
-    def __init__(self):
-        data_delivery_host = os.environ['DATA_DELIVERY_ADDRESS'] if 'DATA_DELIVERY_ADDRESS' in os.environ else os.environ['DATA_DELIVERY_ENDPOINT_SERVICE_HOST']
-        data_delivery_port = os.environ['DATA_DELIVERY_PORT'] if 'DATA_DELIVERY_PORT' in os.environ else os.environ['DATA_DELIVERY_ENDPOINT_SERVICE_PORT']
-        data_delivery_address = '{}:{}'.format(data_delivery_host, data_delivery_port)
+    def __init__(self, data_delivery_address):
         data_delivery_channel = grpc.insecure_channel(data_delivery_address, options=(('grpc.enable_http_proxy', 0),))
         self.data_delivery_client = DataDeliveryStub(data_delivery_channel)
 
@@ -80,13 +77,7 @@ class DataAnalysisService(data_analysis_pb2_grpc.DataAnalysisServicer):
             dt = dt.replace(year=dt.year - years, day=dt.day - 1)
         return dt
 
-def serve():
-
-    logging_host = os.environ['LOGGING_ADDRESS'] if 'LOGGING_ADDRESS' in os.environ else os.environ[
-        'LOGGING_ENDPOINT_SERVICE_HOST']
-    logging_port = os.environ['LOGGING_PORT'] if 'LOGGING_PORT' in os.environ else os.environ[
-        'LOGGING_ENDPOINT_SERVICE_PORT']
-    logging_address = '{}:{}'.format(logging_host, logging_port)
+def serve(logging_address, data_delivery_address):
     logging_channel = grpc.insecure_channel(logging_address, options=(('grpc.enable_http_proxy', 0),))
     logging_client = LoggingServiceStub(logging_channel)
 
@@ -133,7 +124,7 @@ def serve():
     )
 
     data_analysis_pb2_grpc.add_DataAnalysisServicer_to_server(
-        DataAnalysisService(), server
+        DataAnalysisService(data_delivery_address), server
     )
 
     server.add_insecure_port("[::]:{}".format(os.environ['OUT_PORT']))
@@ -142,10 +133,22 @@ def serve():
 
 
 if __name__ == '__main__':
-    if not 'DATA_DELIVERY_ADDRESS' in os.environ:
-        argparser = argparse.ArgumentParser()
-        argparser.add_argument('--env', '-e')
-        arguments = argparser.parse_args()
-        env_path = arguments.env if arguments.env else '.env'
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('--env', '-e')
+    arguments = argparser.parse_args()
+    env_path = arguments.env if arguments.env else '.env'
+    if 'KUBERNETES_SERVICE_HOST' in os.environ:
+        data_delivery_host = os.environ['DATA_DELIVERY_ENDPOINT_SERVICE_HOST']
+        data_delivery_port = os.environ['DATA_DELIVERY_ENDPOINT_SERVICE_PORT']
+        logging_host = os.environ['LOGGING_ENDPOINT_SERVICE_HOST']
+        logging_port = os.environ['LOGGING_ENDPOINT_SERVICE_PORT']
+    else:
         dotenv.load_dotenv(arguments.env)
-    serve()
+
+        data_delivery_host = os.environ['DATA_DELIVERY_ADDRESS']
+        data_delivery_port = os.environ['DATA_DELIVERY_PORT']
+        logging_host = os.environ['LOGGING_ADDRESS']
+        logging_port = os.environ['LOGGING_PORT']
+    data_delivery_address = '{}:{}'.format(data_delivery_host, data_delivery_port)
+    logging_address = '{}:{}'.format(logging_host, logging_port)
+    serve(logging_address, data_delivery_address)

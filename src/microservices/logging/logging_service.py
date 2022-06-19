@@ -115,4 +115,5 @@ if __name__ == '__main__':
     arguments = argparser.parse_args()
     env_path = arguments.env if arguments.env else '.env'
     dotenv.load_dotenv(arguments.env)
+    print(os.environ)
     serve()

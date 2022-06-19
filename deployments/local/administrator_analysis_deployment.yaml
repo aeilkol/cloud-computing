@@ -4,31 +4,31 @@ data:
   DB_HOST: 34.76.79.112
   DB_NAME: flights_covid
   DB_PORT: "5432"
-  OUT_PORT: "30052"
+  OUT_PORT: "30055"
 metadata:
-  name: data-analysis-config
+  name: administrator-analysis-config
   namespace: default
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: data-analysis
+  name: administrator-analysis
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
       type: microservice
-      app: data-analysis
+      app: administrator-analysis
   template:
     metadata:
       labels:
         type: microservice
-        app: data-analysis
+        app: administrator-analysis
     spec:
       containers:
-      - name: data-analysis
-        image: data_analysis
+      - name: administrator-analysis
+        image: administrator_analysis
         imagePullPolicy: IfNotPresent
         env:
           - name: DB_USER
@@ -45,23 +45,22 @@ spec:
                 optional: false
         envFrom:
           - configMapRef:
-              name: data-analysis-config
+              name: administrator-analysis-config
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: data-analysis-endpoint
+  name: administrator-analysis-endpoint
   namespace: default
   labels:
     type: microservice
-    app: data-analysis
+    app: administrator-analysis
 spec:
   selector:
     type: microservice
-    app: data-analysis
+    app: administrator-analysis
   ports:
-  - port: 30052
-    targetPort: 30052
+  - port: 30055
     protocol: TCP
-  type: NodePort
+  type: ClusterIP
