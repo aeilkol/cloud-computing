@@ -1,0 +1,59 @@
+#apiVersion: v1
+#kind: ConfigMap
+#data:
+#  DATA_DELIVERY_ADDRESS: data-delivery-endpoint.default
+#  DATA_DELIVERY_PORT: "30273"
+#  DATA_ANALYSIS_ADDRESS: data-analysis-endpoint.default
+#  DATA_ANALYSIS_PORT: "30117"
+#  ADMINISTRATOR_ANALYSIS_ADDRESS: administrator-analysis-endpoint.default
+#  ADMINISTRATOR_ANALYSIS_PORT: "30211"
+#  LOGGING_ADDRESS: logging-endpoint.default
+#  LOGGING_PORT: "30563"
+#metadata:
+#  name: outbound-config
+#  namespace: default
+#---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: outbound
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      type: outbound
+      app: outbound
+  template:
+    metadata:
+      labels:
+        type: outbound
+        app: outbound
+    spec:
+      containers:
+      - name: outbound
+        image: europe-west1-docker.pkg.dev/cloud-computing-347913/cloud-computing-repo/outbound:latest
+        imagePullPolicy: IfNotPresent
+#        envFrom:
+#          - configMapRef:
+#              name: outbound-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: outbound-endpoint
+  namespace: default
+  labels:
+    type: outbound
+    app: outbound
+spec:
+  selector:
+    type: outbound
+    app: outbound
+  ports:
+  - port: 8080
+    targetPort: 8080
+    nodePort: 30000
+    protocol: TCP
+  type: NodePort

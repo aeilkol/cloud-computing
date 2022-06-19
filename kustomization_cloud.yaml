@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- src/microservices/logging/logging_deployment_cloud.yaml
+- src/microservices/administrator_analysis/administrator_analysis_deployment_cloud.yaml
+- src/microservices/data_analysis/data_analysis_deployment_cloud.yaml
+- src/microservices/data_delivery/data_delivery_deployment_cloud.yaml
+- src/outbound/outbound_deployment_cloud.yaml
