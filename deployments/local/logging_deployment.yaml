@@ -5,10 +5,37 @@ data:
   DB_NAME: flights_covid
   DB_PORT: "5432"
   OUT_PORT: "30054"
+  LOG_PATH: "/home/logging/logs"
 metadata:
   name: logging-config
   namespace: default
-
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: log-pv-volume
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/home/aeilko/Documents/Uni/Cloud Computing/Project/cloud-computing/deployments/log"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: log-pv-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -27,6 +54,10 @@ spec:
         type: microservice
         app: logging
     spec:
+      volumes:
+        - name: log-pv-storage
+          persistentVolumeClaim:
+            claimName: log-pv-claim
       containers:
       - name: logging
         image: logging
@@ -47,6 +78,9 @@ spec:
         envFrom:
           - configMapRef:
               name: logging-config
+        volumeMounts:
+          - mountPath: "/home/logging/logs"
+            name: log-pv-storage
 
 ---
 apiVersion: v1

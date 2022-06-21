@@ -20,6 +20,7 @@ from redirect_output import LoggingRedirector
 if os.environ.get('https_proxy'):
     del os.environ['https_proxy']
 
+dotenv.load_dotenv('.env')
 if 'KUBERNETES_SERVICE_HOST' in os.environ:
     data_delivery_host = os.environ['DATA_DELIVERY_ENDPOINT_SERVICE_HOST']
     data_delivery_port = os.environ['DATA_DELIVERY_ENDPOINT_SERVICE_PORT']
@@ -30,8 +31,6 @@ if 'KUBERNETES_SERVICE_HOST' in os.environ:
     logging_host = os.environ['LOGGING_ENDPOINT_SERVICE_HOST']
     logging_port = os.environ['LOGGING_ENDPOINT_SERVICE_PORT']
 else:
-    dotenv.load_dotenv('.env')
-
     data_delivery_host = os.environ['DATA_DELIVERY_ADDRESS']
     data_delivery_port = os.environ['DATA_DELIVERY_PORT']
     data_analysis_host = os.environ['DATA_ANALYSIS_ADDRESS']
@@ -76,7 +75,9 @@ while retries < max_retries and not connected:
 if not connected:
     print('Logging service not available, will use console instead.')
 
-print('Adresses: (Data Delivery {}, Data Analysis {}, Admin Analysis {}'.format(data_delivery_address, data_analysis_address, administrator_analysis_address))
+print('Running in Kubernetes: {}'.format('KUBERNETES_SERVICE_HOST' in os.environ))
+print('Adresses: (Data Delivery {}, Data Analysis {}, Admin Analysis {}, Logging {})'
+      .format(data_delivery_address, data_analysis_address, administrator_analysis_address, logging_address))
 
 def read_all_airports(continent, airport_type=1):
     request = AirportRequest(
@@ -120,3 +121,6 @@ def read_runtimes(service, request_type, start_time=None, end_time=None):
     request = RequestAnalysisRequest(service=service, request=request_type, start_time=start_time, end_time=end_time)
     response = administrator_analysis_client.RequestAnalysis(request)
     return MessageToDict(response)
+
+def health_check():
+    return 'Healthy'

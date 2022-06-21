@@ -117,6 +117,20 @@ paths:
         "404":
           $ref: '#/components/responses/not_found'
 
+  /healthy:
+    get:
+      tags:
+        - Health
+      summary: A simple health check of the outbound service
+      operationId: endpoints.health_check
+      responses:
+        "200":
+          description: A simple successful response
+          content:
+            text/plain:
+              schema:
+                type: string
+
 tags:
   - name: Airports And Flights
     description: "Get data from all the airports"

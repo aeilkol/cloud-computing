@@ -1,12 +1,17 @@
 import sys
-from logging_pb2 import LogRequest, Service, Level
+import logging
+
+from logging_pb2 import LogRequest
 
 
 class LoggingRedirector:
 
     def __init__(self, logging_client, origin, stdout=True):
+
         self.logging_client = logging_client
         self.origin = origin
+        self.file_out = open('log.txt', 'a')
+
         if stdout:
             self.standard_level = 'info'
             self.original_stdout = sys.stdout
@@ -20,8 +25,8 @@ class LoggingRedirector:
                 level = self.standard_level
             if (type(txt) == bytes):
                 txt = str(txt)
-            self.original_stdout.write(txt)
-            self.original_stdout.write('\n')
+            self.file_out.write(txt + '\n')
+            self.original_stdout.write(txt + '\n')
             try:
                 request = LogRequest(message=txt, level=level, origin=self.origin)
                 self.logging_client.Log(request)
@@ -30,4 +35,5 @@ class LoggingRedirector:
                 raise e
 
     def flush(self):
-        pass
+            self.file_out.flush()
+            self.original_stdout.flush()

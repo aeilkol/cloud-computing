@@ -5,3 +5,4 @@ microservices/**/redirect_output.py
 outbound/redirect_output.py
 **/*.log
 certs
+**/log.txt
